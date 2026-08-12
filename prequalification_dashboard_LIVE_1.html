@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grid &amp; SE Prequalification Tracker — Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+
+:root{
+  --bg:#071624;
+  --bg-panel:#0e2236;
+  --bg-panel-raised:#152e46;
+  --bg-raised-2:#1b3854;
+  --line:#1f3d58;
+  --cyan:#4fd1e8;
+  --cyan-dim:#2f7a8c;
+  --amber:#f5a623;
+  --green:#4ade80;
+  --red:#f0554a;
+  --purple:#b98ff0;
+  --text:#eaf2f8;
+  --text-muted:#7d97ac;
+  --text-dim:#4f6478;
+  --font-display:'Space Grotesk',sans-serif;
+  --font-body:'IBM Plex Sans',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(79,209,232,0.07), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(245,166,35,0.05), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  font-size:14px;
+  line-height:1.5;
+  min-height:100vh;
+}
+.scanlines{
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:repeating-linear-gradient(180deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+  opacity:0.5;
+}
+main{position:relative; z-index:1; max-width:1280px; margin:0 auto; padding:0 28px 60px;}
+
+.loading-banner{
+  display:flex; align-items:center; gap:12px; justify-content:center;
+  padding:60px 20px; color:var(--text-muted); font-family:var(--font-mono); font-size:13px;
+}
+.spinner{
+  width:16px; height:16px; border-radius:50%;
+  border:2px solid var(--line); border-top-color:var(--cyan);
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.error-banner{
+  max-width:700px; margin:60px auto; padding:20px 24px;
+  background:rgba(240,85,74,0.08); border:1px solid rgba(240,85,74,0.3); border-radius:12px;
+  color:var(--text); font-size:13px; line-height:1.6;
+}
+.error-banner h3{color:var(--red); font-family:var(--font-display); margin:0 0 8px;}
+.error-banner code{background:var(--bg-panel-raised); padding:2px 6px; border-radius:4px; font-family:var(--font-mono); font-size:12px;}
+
+.topbar{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 28px;
+  background:rgba(7,22,36,0.88);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex; align-items:center; gap:14px;}
+.brand-mark{
+  width:44px; height:44px; border-radius:10px;
+  background:linear-gradient(150deg, var(--bg-panel-raised), var(--bg-panel));
+  border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+}
+.eyebrow{
+  font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.14em;
+  color:var(--cyan); text-transform:uppercase; margin-bottom:2px;
+}
+h1{font-family:var(--font-display); font-size:20px; font-weight:600; margin:0; letter-spacing:-0.01em;}
+.topbar-meta{display:flex; align-items:center; gap:12px;}
+.meta-item{display:flex; flex-direction:column; align-items:flex-end; margin-right:6px;}
+.meta-label{font-family:var(--font-mono); font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.08em;}
+.meta-val{font-family:var(--font-mono); font-size:12.5px; color:var(--text-muted);}
+.btn-ghost{
+  font-family:var(--font-mono); font-size:11.5px; letter-spacing:0.03em;
+  color:var(--cyan); background:transparent; border:1px solid var(--cyan-dim);
+  padding:8px 14px; border-radius:6px; cursor:pointer; transition:all .15s ease;
+}
+.btn-ghost:hover{background:rgba(79,209,232,0.08); border-color:var(--cyan);}
+.btn-ghost.small{padding:6px 10px; font-size:10.5px;}
+
+.panel{
+  background:var(--bg-panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:24px 26px;
+  margin-top:24px;
+}
+.panel-head{display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-bottom:18px;}
+.panel-head h2{font-family:var(--font-display); font-size:16px; font-weight:600; margin:0;}
+.panel-sub{font-size:12px; color:var(--text-muted); font-family:var(--font-mono);}
+
+.flow-panel{margin-top:18px;}
+#flowSvgWrap svg{width:100%; height:auto; display:block;}
+.flow-node-label{font-family:var(--font-mono); font-size:10.5px; fill:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em;}
+.flow-node-sub{font-family:var(--font-mono); font-size:9.5px; fill:var(--text-dim);}
+.flow-node-count{font-family:var(--font-display); font-size:24px; font-weight:700; fill:var(--text);}
+.flow-line{stroke:var(--cyan-dim); stroke-width:2; fill:none;}
+.flow-line-active{stroke:var(--cyan); stroke-width:2; fill:none; stroke-dasharray:6 6; animation:dashmove 1.4s linear infinite;}
+@keyframes dashmove{to{stroke-dashoffset:-24;}}
+.flow-node-circle{fill:var(--bg-panel-raised); stroke:var(--line); stroke-width:1.5;}
+.flow-node-circle.lit{stroke:var(--cyan); filter:drop-shadow(0 0 6px rgba(79,209,232,0.5));}
+.flow-stage-num{font-family:var(--font-mono); font-size:9.5px; fill:var(--bg); font-weight:600;}
+.flow-stage-badge{fill:var(--cyan);}
+
+.kpi-strip{display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin-top:22px;}
+.kpi-card{
+  background:var(--bg-panel); border:1px solid var(--line); border-radius:12px;
+  padding:16px 16px 14px; position:relative; overflow:hidden;
+}
+.kpi-card::before{content:''; position:absolute; top:0; left:0; width:100%; height:2px; background:var(--kpi-accent, var(--cyan));}
+.kpi-num{font-family:var(--font-display); font-size:28px; font-weight:700; line-height:1;}
+.kpi-label{font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-top:8px;}
+.kpi-sub{font-size:11px; color:var(--text-dim); margin-top:4px;}
+
+.alerts-panel{border-color:rgba(240,85,74,0.35);}
+.alerts-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:12px;}
+.alert-card{
+  background:var(--bg-panel-raised); border:1px solid rgba(240,85,74,0.3); border-radius:10px;
+  padding:12px 14px; cursor:pointer; transition:border-color .15s;
+}
+.alert-card:hover{border-color:var(--red);}
+.alert-card .a-partner{font-family:var(--font-display); font-weight:600; font-size:14px;}
+.alert-card .a-detail{font-size:11.5px; color:var(--text-muted); margin-top:4px; font-family:var(--font-mono);}
+.alert-tag{display:inline-block; font-family:var(--font-mono); font-size:9.5px; text-transform:uppercase; letter-spacing:0.05em; padding:2px 7px; border-radius:20px; margin-bottom:6px;}
+.alert-tag.expired{background:rgba(240,85,74,0.15); color:var(--red);}
+.alert-tag.soon{background:rgba(245,166,35,0.15); color:var(--amber);}
+.alert-tag.reject{background:rgba(240,85,74,0.15); color:var(--red);}
+.alert-tag.stalled{background:rgba(185,143,240,0.15); color:var(--purple);}
+
+.toolbar{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;}
+.toolbar input, .toolbar select{
+  background:var(--bg-panel-raised); border:1px solid var(--line); color:var(--text);
+  font-family:var(--font-body); font-size:12.5px; padding:9px 12px; border-radius:7px;
+  outline:none; transition:border-color .15s;
+}
+.toolbar input{flex:1; min-width:200px;}
+.toolbar input:focus, .toolbar select:focus{border-color:var(--cyan-dim);}
+
+.table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px;}
+table{width:100%; border-collapse:collapse; min-width:1020px;}
+thead th{
+  text-align:left; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase;
+  letter-spacing:0.06em; color:var(--text-muted); padding:11px 14px; background:var(--bg-panel-raised);
+  border-bottom:1px solid var(--line); cursor:pointer; white-space:nowrap; user-select:none;
+}
+thead th:hover{color:var(--cyan);}
+tbody td{padding:11px 14px; border-bottom:1px solid var(--line); font-size:12.5px; vertical-align:middle;}
+tbody tr{cursor:pointer; transition:background .1s;}
+tbody tr:hover{background:rgba(79,209,232,0.05);}
+tbody tr:last-child td{border-bottom:none;}
+.cell-partner{font-family:var(--font-display); font-weight:600; font-size:13px;}
+.cell-sub{color:var(--text-dim); font-size:10.5px; margin-top:2px;}
+.cell-mono{font-family:var(--font-mono); font-size:11.5px; color:var(--text-muted);}
+
+.compliance-bar{width:80px; height:6px; border-radius:4px; background:var(--bg-raised-2); overflow:hidden; margin-bottom:4px;}
+.compliance-bar-fill{height:100%; border-radius:4px;}
+.compliance-text{font-family:var(--font-mono); font-size:11px; color:var(--text-muted);}
+
+.badge{
+  display:inline-flex; align-items:center; gap:5px; font-family:var(--font-mono); font-size:10.5px;
+  text-transform:uppercase; letter-spacing:0.03em; padding:3px 9px; border-radius:20px; white-space:nowrap;
+}
+.badge::before{content:''; width:6px; height:6px; border-radius:50%; background:currentColor;}
+.badge-signed{background:rgba(74,222,128,0.12); color:var(--green);}
+.badge-negotiation{background:rgba(245,166,35,0.12); color:var(--amber);}
+.badge-onhold{background:rgba(125,151,172,0.15); color:var(--text-muted);}
+.badge-notstarted{background:rgba(125,151,172,0.1); color:var(--text-dim);}
+.badge-yes{background:rgba(74,222,128,0.12); color:var(--green);}
+.badge-no{background:rgba(125,151,172,0.1); color:var(--text-dim);}
+.badge-expired{background:rgba(240,85,74,0.15); color:var(--red);}
+.badge-soon{background:rgba(245,166,35,0.15); color:var(--amber);}
+.badge-stage{background:rgba(79,209,232,0.1); color:var(--cyan);}
+.badge-purple{background:rgba(185,143,240,0.12); color:var(--purple);}
+
+.empty-state{padding:40px; text-align:center; color:var(--text-dim); font-family:var(--font-mono); font-size:12px;}
+
+.doc-btn-row{display:flex; flex-direction:column; gap:4px;}
+.doc-btn-col{display:flex; flex-direction:column; gap:8px;}
+.doc-btn{
+  display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:11.5px;
+  color:var(--cyan); background:rgba(79,209,232,0.08); border:1px solid var(--cyan-dim);
+  padding:7px 12px; border-radius:7px; text-decoration:none; transition:all .15s ease; width:fit-content;
+}
+.doc-btn:hover{background:rgba(79,209,232,0.16); border-color:var(--cyan);}
+.doc-btn-sm{font-size:10px; padding:3px 8px; border-radius:5px;}
+
+.prospect-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(270px,1fr)); gap:14px;}
+.prospect-card{background:var(--bg-panel-raised); border:1px solid var(--line); border-radius:10px; padding:14px 16px;}
+.prospect-card .p-name{font-family:var(--font-display); font-weight:600; font-size:14px;}
+.prospect-card .p-product{font-size:11.5px; color:var(--text-muted); margin-top:3px; margin-bottom:10px; line-height:1.4;}
+.p-stages{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;}
+.p-note{font-size:11px; color:var(--text-dim); line-height:1.45; border-top:1px solid var(--line); padding-top:8px; margin-top:8px;}
+
+.drawer-overlay{
+  position:fixed; inset:0; background:rgba(2,8,14,0.6); backdrop-filter:blur(2px);
+  z-index:40; opacity:0; pointer-events:none; transition:opacity .2s;
+}
+.drawer-overlay.open{opacity:1; pointer-events:auto;}
+.drawer{
+  position:fixed; top:0; right:0; height:100%; width:440px; max-width:92vw;
+  background:var(--bg-panel); border-left:1px solid var(--line);
+  z-index:50; transform:translateX(100%); transition:transform .25s ease;
+  overflow-y:auto;
+}
+.drawer.open{transform:translateX(0);}
+.drawer-head{
+  position:sticky; top:0; background:var(--bg-panel); z-index:2;
+  display:flex; align-items:flex-start; justify-content:space-between;
+  padding:22px 22px 16px; border-bottom:1px solid var(--line);
+}
+.drawer-head h3{font-family:var(--font-display); font-size:19px; margin:2px 0 0;}
+.btn-icon{background:transparent; border:1px solid var(--line); color:var(--text-muted); width:32px; height:32px; border-radius:8px; font-size:18px; cursor:pointer; line-height:1;}
+.btn-icon:hover{color:var(--text); border-color:var(--cyan-dim);}
+.drawer-body{padding:20px 22px 40px;}
+.d-section{margin-bottom:20px;}
+.d-section-title{font-family:var(--font-mono); font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--cyan); margin-bottom:8px;}
+.d-row{display:flex; justify-content:space-between; gap:14px; padding:7px 0; border-bottom:1px dashed var(--line); font-size:12.5px;}
+.d-row:last-child{border-bottom:none;}
+.d-row .d-k{color:var(--text-muted); flex-shrink:0;}
+.d-row .d-v{text-align:right; font-family:var(--font-mono); font-size:12px;}
+.d-text{font-size:12.5px; color:var(--text); line-height:1.55; background:var(--bg-panel-raised); padding:12px 14px; border-radius:8px; border:1px solid var(--line); white-space:pre-line;}
+
+.foot-note{margin-top:30px; padding:16px 4px 4px; border-top:1px solid var(--line);}
+.foot-note p{font-size:11.5px; color:var(--text-dim); line-height:1.6; max-width:920px;}
+
+@media (max-width:900px){
+  .kpi-strip{grid-template-columns:repeat(2,1fr);}
+  .topbar{padding:14px 16px; flex-wrap:wrap; gap:10px;}
+  main{padding:0 14px 40px;}
+  table{min-width:800px;}
+}
+@media print{
+  .topbar, .toolbar, .btn-ghost, .drawer, .drawer-overlay{display:none !important;}
+  body{background:#fff; color:#111;}
+  .panel{border:1px solid #ccc; background:#fff;}
+}
+
+</style>
+</head>
+<body>
+
+<div class="scanlines"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 40 40" width="34" height="34">
+        <path d="M20 2 L6 22 H18 L14 38 L34 16 H21 Z" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <div class="eyebrow">SUPPLY CHAIN COMPLIANCE — SAUDI ARABIA</div>
+      <h1>Grid &amp; SE Prequalification Tracker</h1>
+    </div>
+  </div>
+  <div class="topbar-meta">
+    <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
+    <button class="btn-ghost small" id="refreshBtn">Refresh</button>
+    <button class="btn-ghost" id="printBtn">Export / Print</button>
+  </div>
+</header>
+
+<div id="loadingBanner" class="loading-banner">
+  <div class="spinner"></div>
+  <span>Connecting to the Google Sheet…</span>
+</div>
+
+<div id="errorBanner" class="error-banner" style="display:none;"></div>
+
+<main id="mainContent" style="display:none;">
+
+  <section class="panel flow-panel">
+    <div class="panel-head">
+      <h2>Process funnel — from lead to prequalified</h2>
+      <span class="panel-sub">Your 6-step onboarding process, with live counts at each stage</span>
+    </div>
+    <div id="flowSvgWrap"></div>
+  </section>
+
+  <section class="kpi-strip" id="kpiStrip"></section>
+
+  <section class="panel alerts-panel" id="alertsPanel" style="display:none;">
+    <div class="panel-head">
+      <h2>Needs attention</h2>
+      <span class="panel-sub">Expired or soon-to-expire agreements, open rejections, and stalled PQ rounds</span>
+    </div>
+    <div class="alerts-grid" id="alertsGrid"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Prequalification register</h2>
+      <span class="panel-sub" id="registerCount">—</span>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="searchInput" placeholder="Search partner, product, standard..." />
+      <select id="filterStage"><option value="">All stages</option></select>
+      <select id="filterBusinessLine"><option value="">All business lines</option></select>
+      <select id="filterAgreement"><option value="">All agreement status</option></select>
+      <select id="filterAgreementType"><option value="">All agreement types</option></select>
+      <button class="btn-ghost small" id="resetFilters">Reset</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="mainTable">
+        <thead>
+          <tr>
+            <th data-sort="partner">Partner</th>
+            <th data-sort="product">Product</th>
+            <th data-sort="current_stage">Stage</th>
+            <th data-sort="compliance_pct">Compliance</th>
+            <th data-sort="agreement_type">Agreement type</th>
+            <th data-sort="remaining_days">Expiry</th>
+            <th data-sort="pq_round">PQ round</th>
+            <th data-sort="days_idle">Days idle</th>
+            <th>Docs</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div id="emptyState" class="empty-state" style="display:none;">No records match these filters.</div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Candidate pipeline <span style="color:var(--text-dim); font-weight:400;">— stages 1–2</span></h2>
+      <span class="panel-sub">Companies under discussion — not yet in the formal register above</span>
+    </div>
+    <div class="prospect-grid" id="prospectGrid"></div>
+  </section>
+
+  <footer class="foot-note">
+    <p>Live view of the team's Google Sheet. Data refreshes on page load and when you click Refresh — it is not real-time push, so ask people to hit Refresh if they just edited the sheet. Business line, agreement status, agreement type, and qualification are read directly from the sheet's dropdown values.</p>
+  </footer>
+
+</main>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div>
+      <div class="eyebrow" id="drawerEyebrow">PARTNER RECORD</div>
+      <h3 id="drawerTitle">—</h3>
+    </div>
+    <button class="btn-icon" id="drawerClose">&times;</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+
+<script>
+/* ============================================================
+   CONFIG — paste your two published Google Sheet CSV URLs here.
+   Google Sheet > File > Share > Publish to web > select the tab
+   > format "Comma-separated values (.csv)" > Publish > copy link.
+   ============================================================ */
+const REGISTER_CSV_URL  = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRk_BNk3U94nBMdr8cwbybBlslRGZfCFGzrPojWhniuS1FZFm21yrTdTGe3GTxsrQ/pub?gid=1450220565&single=true&output=csv";
+const PIPELINE_CSV_URL  = "PASTE_CANDIDATE_PIPELINE_TAB_PUBLISHED_CSV_URL_HERE";
+
+
+const $ = (sel, ctx=document) => ctx.querySelector(sel);
+const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+const esc = (s) => (s===null||s===undefined) ? '' : String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const STAGE_LABELS = {
+  1:'Lead identified', 2:'Candidate ID', 3:'Comparison / selection',
+  4:'Initial agreement', 5:'Registration + agreement', 6:'PQ cycle with SE'
+};
+
+let DATA1 = [];
+let DATA2 = [];
+
+// ---------- CSV fetch + parse ----------
+function fetchCSV(url){
+  return new Promise((resolve, reject) => {
+    if(!url || url.startsWith('PASTE_')){
+      reject(new Error('CONFIG_MISSING'));
+      return;
+    }
+    Papa.parse(url, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => resolve(results.data),
+      error: (err) => reject(err)
+    });
+  });
+}
+
+function toDate(str){
+  if(!str) return null;
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+}
+function daysBetween(a,b){
+  return Math.round((a - b) / 86400000);
+}
+
+function mapRegisterRow(row, i){
+  const g = (k) => (row[k] || '').toString().trim();
+  const agreementEnd = toDate(g('Agreement end'));
+  const today = new Date();
+  let remainingDays = null, expired = false;
+  if(agreementEnd){
+    remainingDays = daysBetween(agreementEnd, today);
+    expired = remainingDays < 0;
+  }
+  const lastMove = toDate(g('Last movement date'));
+  const daysIdle = lastMove ? daysBetween(today, lastMove) : null;
+
+  const agreementType = g('Agreement type');
+  let agentType = 'Unspecified';
+  if(/exclusive/i.test(agreementType)) agentType = 'Exclusive';
+  else if(agreementType) agentType = 'Non-Exclusive';
+
+  return {
+    sr: g('Sr') || i+1,
+    partner: g('Partner / Company'),
+    responsible: g('Responsible engineer'),
+    business_line: g('Business line'),
+    product: g('Product'),
+    se_standard: g('SE standard #'),
+    current_stage: parseInt(g('Current stage (1-6)')) || null,
+    compliance_pct: g('Compliance %') ? parseFloat(g('Compliance %')) : null,
+    needs_info_count: g('Clauses needing info') ? parseInt(g('Clauses needing info')) : null,
+    agreement_status: g('Agreement status') || 'Not Started',
+    agreement_type: agreementType,
+    agent_type: agentType,
+    agreement_start: g('Agreement start'),
+    agreement_end: g('Agreement end'),
+    remaining_days: remainingDays,
+    expired: expired,
+    se_registered_date: g('SE registered date'),
+    ng_registered_date: g('NG registered date'),
+    commercial_registration: g('Commercial registration'),
+    pq_submit_date: g('PQ submitted date'),
+    pq_round: g('PQ round #') ? parseInt(g('PQ round #')) : null,
+    waiting_on: g('Waiting on'),
+    days_idle: daysIdle,
+    qualified: g('Qualified (Yes/No)'),
+    qualified_date: g('Qualified date'),
+    doc_agreement: g('Agreement PDF (Drive link)'),
+    doc_matrix: g('Compliance matrix (Drive link)'),
+    doc_other: g('Other document (Drive link)'),
+    comment: g('Last update / comment'),
+    next_action: g('Next action'),
+  };
+}
+
+function mapPipelineRow(row, i){
+  const g = (k) => (row[k] || '').toString().trim();
+  return {
+    no: g('No') || i+1,
+    company: g('Company'),
+    linked_need: g('Linked product need'),
+    product: g('Product'),
+    agreement_status: g('Agreement status') || 'Not Started',
+    registration_status: g('Registration status') || 'Not Started',
+    qualification_status: g('Qualification status') || 'Not Started',
+    last_update: g('Last update'),
+  };
+}
+
+// ---------- badges ----------
+function agreementBadge(status){
+  const map = {'Signed':'badge-signed', 'In Negotiation':'badge-negotiation', 'On Hold':'badge-onhold', 'Not Started':'badge-notstarted'};
+  const cls = map[status] || 'badge-notstarted';
+  return `<span class="badge ${cls}">${esc(status||'Not Started')}</span>`;
+}
+function yesNoBadge(v){
+  if(!v) return `<span class="badge badge-no">—</span>`;
+  const isYes = /yes/i.test(v);
+  return `<span class="badge ${isYes?'badge-yes':'badge-no'}">${esc(v)}</span>`;
+}
+function expiryBadge(row){
+  if(row.expired) return `<span class="badge badge-expired">Expired</span>`;
+  if(row.remaining_days===null || row.remaining_days===undefined) return `<span class="badge badge-notstarted">—</span>`;
+  if(row.remaining_days<=180) return `<span class="badge badge-soon">${row.remaining_days}d left</span>`;
+  return `<span class="cell-mono">${row.remaining_days}d</span>`;
+}
+function stageBadge(n){
+  if(!n) return `<span class="badge badge-notstarted">—</span>`;
+  return `<span class="badge badge-stage">${n} · ${esc(STAGE_LABELS[n]||'')}</span>`;
+}
+function complianceCell(pct){
+  if(pct===null || pct===undefined || isNaN(pct)) return '—';
+  let color = 'var(--red)';
+  if(pct>=85) color='var(--green)';
+  else if(pct>=60) color='var(--amber)';
+  return `<div class="compliance-bar"><div class="compliance-bar-fill" style="width:${pct}%; background:${color}"></div></div><span class="compliance-text">${pct}%</span>`;
+}
+function isValidLink(url){
+  return url && /^https?:\/\//i.test(url);
+}
+function docLinkButtons(r, size){
+  const docs = [
+    {label:'Agreement', url:r.doc_agreement},
+    {label:'Compliance matrix', url:r.doc_matrix},
+    {label:'Other document', url:r.doc_other},
+  ].filter(d=>isValidLink(d.url));
+  if(docs.length===0) return size==='table' ? '<span class="cell-mono">—</span>' : '<span class="d-text" style="opacity:0.6">No documents linked yet.</span>';
+  const cls = size==='table' ? 'doc-btn doc-btn-sm' : 'doc-btn';
+  return docs.map(d=>`<a class="${cls}" href="${esc(d.url)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">
+      <svg width="${size==='table'?11:13}" height="${size==='table'?11:13}" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      ${esc(d.label)}
+    </a>`).join('');
+}
+
+// ---------- KPIs ----------
+function computeKPIs(){
+  const total = DATA1.length;
+  const signed = DATA1.filter(r=>r.agreement_status==='Signed').length;
+  const negotiation = DATA1.filter(r=>r.agreement_status==='In Negotiation').length;
+  const seReg = DATA1.filter(r=>r.se_registered_date).length;
+  const qualified = DATA1.filter(r=>/yes/i.test(r.qualified||'')).length;
+  const expiringSoon = DATA1.filter(r=>!r.expired && r.remaining_days!==null && r.remaining_days<=180).length;
+  const expired = DATA1.filter(r=>r.expired).length;
+  const complianceVals = DATA1.filter(r=>r.compliance_pct!==null && !isNaN(r.compliance_pct));
+  const avgCompliance = complianceVals.length ? Math.round(complianceVals.reduce((s,r)=>s+r.compliance_pct,0)/complianceVals.length) : null;
+  const stalled = DATA1.filter(r=>r.current_stage===6 && r.days_idle!==null && r.days_idle>60).length;
+
+  const cards = [
+    {num: total, label:'Tracked partners / lines', sub: (new Set(DATA1.map(r=>r.partner))).size + ' unique companies + '+DATA2.length+' candidates', accent:'var(--cyan)'},
+    {num: signed, label:'Agreements signed', sub: negotiation+' in negotiation', accent:'var(--green)'},
+    {num: seReg, label:'SE registered', sub: total-seReg+' pending', accent:'var(--cyan)'},
+    {num: qualified, label:'Qualified products', sub: 'of '+total+' tracked lines', accent:'var(--green)'},
+    {num: avgCompliance===null ? '—' : avgCompliance+'%', label:'Avg compliance', sub: complianceVals.length+' records with a matrix score', accent:'var(--purple)'},
+    {num: expiringSoon+expired+stalled, label:'Needs attention', sub: expired+' expired · '+expiringSoon+' expiring · '+stalled+' PQ stalled', accent:'var(--red)'},
+  ];
+  document.getElementById('kpiStrip').innerHTML = cards.map(c=>`
+    <div class="kpi-card" style="--kpi-accent:${c.accent}">
+      <div class="kpi-num">${c.num}</div>
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-sub">${c.sub}</div>
+    </div>`).join('');
+}
+
+// ---------- funnel ----------
+function renderFlow(){
+  const stageCounts = {1:0,2:DATA2.length,3:0,4:0,5:0,6:0};
+  DATA1.forEach(r=>{ if(r.current_stage) stageCounts[r.current_stage] = (stageCounts[r.current_stage]||0)+1; });
+  const stages = [
+    {n:1, label:'Lead identified', sub:'not tracked yet', count:null},
+    {n:2, label:'Candidate ID', sub:DATA2.length+' companies', count:stageCounts[2]},
+    {n:3, label:'Comparison', sub:'selecting supplier', count:stageCounts[3]},
+    {n:4, label:'Initial agreement', sub:'terms discussion', count:stageCounts[4]},
+    {n:5, label:'Registration', sub:'+ formal agreement', count:stageCounts[5]},
+    {n:6, label:'PQ with SE', sub:'compliance cycle', count:stageCounts[6]},
+  ];
+  const w = 1180, h = 168, n = stages.length, margin = 90, step = (w-margin*2)/(n-1), cy = 66, r = 38;
+  let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">`;
+  for(let i=0;i<n-1;i++){
+    const x1 = margin+step*i+r, x2 = margin+step*(i+1)-r;
+    const active = stages[i+1].count > 0;
+    svg += `<line x1="${x1}" y1="${cy}" x2="${x2}" y2="${cy}" class="${active?'flow-line-active':'flow-line'}"/>`;
+  }
+  stages.forEach((s,i)=>{
+    const cx = margin+step*i, lit = s.count>0;
+    svg += `<circle cx="${cx}" cy="${cy}" r="${r}" class="flow-node-circle ${lit?'lit':''}"/>`;
+    svg += `<circle cx="${cx-r+2}" cy="${cy-r+2}" r="10" class="flow-stage-badge"/>`;
+    svg += `<text x="${cx-r+2}" y="${cy-r+6}" text-anchor="middle" class="flow-stage-num">${s.n}</text>`;
+    svg += `<text x="${cx}" y="${cy+6}" text-anchor="middle" class="flow-node-count">${s.count===null?'—':s.count}</text>`;
+    svg += `<text x="${cx}" y="${cy+r+20}" text-anchor="middle" class="flow-node-label">${esc(s.label)}</text>`;
+    svg += `<text x="${cx}" y="${cy+r+34}" text-anchor="middle" class="flow-node-sub">${esc(s.sub)}</text>`;
+  });
+  svg += `</svg>`;
+  document.getElementById('flowSvgWrap').innerHTML = svg;
+}
+
+// ---------- alerts ----------
+function renderAlerts(){
+  const expired = DATA1.filter(r=>r.expired);
+  const soon = DATA1.filter(r=>!r.expired && r.remaining_days!==null && r.remaining_days<=180);
+  const rejections = DATA1.filter(r=>r.comment && /reject/i.test(r.comment));
+  const stalled = DATA1.filter(r=>r.current_stage===6 && r.days_idle!==null && r.days_idle>60);
+
+  const all = [
+    ...expired.map(r=>({row:r, tag:'expired', label:'Expired', text:'Expired '+(r.agreement_end||'')})),
+    ...soon.map(r=>({row:r, tag:'soon', label:'Expiring soon', text: r.remaining_days+' days remaining'})),
+    ...rejections.map(r=>({row:r, tag:'reject', label:'Rejected', text: r.next_action || 'See comment'})),
+    ...stalled.map(r=>({row:r, tag:'stalled', label:'PQ stalled', text: r.days_idle+' days since last movement'})),
+  ];
+  if(all.length===0) return;
+  document.getElementById('alertsPanel').style.display = '';
+  document.getElementById('alertsGrid').innerHTML = all.map(a=>`
+    <div class="alert-card" data-sr="${a.row.sr}">
+      <span class="alert-tag ${a.tag}">${a.label}</span>
+      <div class="a-partner">${esc(a.row.partner)}</div>
+      <div class="a-detail">${esc((a.row.product||'').split('\n')[0])}</div>
+      <div class="a-detail">${esc(a.text)}</div>
+    </div>`).join('');
+  $$('.alert-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      const row = DATA1.find(r=>String(r.sr)===card.getAttribute('data-sr'));
+      if(row) openDrawer(row);
+    });
+  });
+}
+
+// ---------- filters / table ----------
+let currentSort = {key:null, dir:1};
+function uniqueVals(field){ return Array.from(new Set(DATA1.map(r=>r[field]).filter(Boolean))).sort(); }
+function populateFilters(){
+  const stSel = document.getElementById('filterStage');
+  [1,2,3,4,5,6].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n+' · '+STAGE_LABELS[n]; stSel.appendChild(o); });
+  const blSel = document.getElementById('filterBusinessLine');
+  uniqueVals('business_line').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; blSel.appendChild(o); });
+  const agSel = document.getElementById('filterAgreement');
+  uniqueVals('agreement_status').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; agSel.appendChild(o); });
+  const agtSel = document.getElementById('filterAgreementType');
+  uniqueVals('agreement_type').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; agtSel.appendChild(o); });
+}
+function getFiltered(){
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const st = document.getElementById('filterStage').value;
+  const bl = document.getElementById('filterBusinessLine').value;
+  const ag = document.getElementById('filterAgreement').value;
+  const agt = document.getElementById('filterAgreementType').value;
+  let rows = DATA1.filter(r=>{
+    if(q){
+      const hay = [r.partner,r.product,r.se_standard,r.responsible].join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    if(st && String(r.current_stage)!==st) return false;
+    if(bl && r.business_line!==bl) return false;
+    if(ag && r.agreement_status!==ag) return false;
+    if(agt && r.agreement_type!==agt) return false;
+    return true;
+  });
+  if(currentSort.key){
+    rows = rows.slice().sort((a,b)=>{
+      let va=a[currentSort.key], vb=b[currentSort.key];
+      if(va===null||va===undefined) va='';
+      if(vb===null||vb===undefined) vb='';
+      if(typeof va==='number' && typeof vb==='number') return (va-vb)*currentSort.dir;
+      return String(va).localeCompare(String(vb))*currentSort.dir;
+    });
+  }
+  return rows;
+}
+function renderTable(){
+  const rows = getFiltered();
+  document.getElementById('registerCount').textContent = rows.length+' of '+DATA1.length+' records';
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+  if(rows.length===0){ tbody.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display='none';
+  tbody.innerHTML = rows.map(r=>`
+    <tr data-sr="${r.sr}">
+      <td><div class="cell-partner">${esc(r.partner)}</div><div class="cell-sub">${esc(r.responsible||'')}</div></td>
+      <td><div>${esc((r.product||'').split('\n')[0])}</div><div class="cell-sub">${esc(r.se_standard||'')}</div></td>
+      <td>${stageBadge(r.current_stage)}</td>
+      <td>${complianceCell(r.compliance_pct)}</td>
+      <td>${r.agreement_type ? `<span class="badge badge-purple">${esc(r.agreement_type)}</span>` : '<span class="badge badge-notstarted">—</span>'}</td>
+      <td>${expiryBadge(r)}</td>
+      <td class="cell-mono">${r.pq_round ? 'R'+r.pq_round : '—'}</td>
+      <td class="cell-mono">${r.days_idle!==null && r.days_idle!==undefined ? r.days_idle+'d' : '—'}</td>
+      <td><div class="doc-btn-row">${docLinkButtons(r,'table')}</div></td>
+    </tr>`).join('');
+  $$('#tableBody tr').forEach(tr=>{
+    tr.addEventListener('click', ()=>{
+      const row = DATA1.find(r=>String(r.sr)===tr.getAttribute('data-sr'));
+      if(row) openDrawer(row);
+    });
+  });
+}
+$$('#mainTable thead th').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.getAttribute('data-sort');
+    if(currentSort.key===key) currentSort.dir *= -1; else { currentSort.key=key; currentSort.dir=1; }
+    renderTable();
+  });
+});
+document.getElementById('searchInput').addEventListener('input', renderTable);
+['filterStage','filterBusinessLine','filterAgreement','filterAgreementType'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', renderTable);
+});
+document.getElementById('resetFilters').addEventListener('click', ()=>{
+  document.getElementById('searchInput').value='';
+  ['filterStage','filterBusinessLine','filterAgreement','filterAgreementType'].forEach(id=>document.getElementById(id).value='');
+  currentSort = {key:null, dir:1};
+  renderTable();
+});
+
+// ---------- drawer ----------
+const drawer = document.getElementById('drawer');
+const overlay = document.getElementById('drawerOverlay');
+function openDrawer(r){
+  document.getElementById('drawerTitle').textContent = r.partner;
+  document.getElementById('drawerEyebrow').textContent = 'RECORD #'+r.sr+(r.business_line?' · '+r.business_line:'');
+  document.getElementById('drawerBody').innerHTML = `
+    <div class="d-section">
+      <div class="d-section-title">Process stage</div>
+      <div class="d-row"><span class="d-k">Current stage</span><span class="d-v">${stageBadge(r.current_stage)}</span></div>
+      <div class="d-row"><span class="d-k">Days idle</span><span class="d-v">${r.days_idle!==null&&r.days_idle!==undefined ? r.days_idle+'d' : '—'}</span></div>
+    </div>
+    <div class="d-section">
+      <div class="d-section-title">Compliance matrix</div>
+      <div class="d-row"><span class="d-k">Overall compliance</span><span class="d-v">${complianceCell(r.compliance_pct)}</span></div>
+      <div class="d-row"><span class="d-k">Clauses needing info</span><span class="d-v">${r.needs_info_count ?? '—'}</span></div>
+      <div class="d-row"><span class="d-k">PQ round</span><span class="d-v">${r.pq_round ? 'Round '+r.pq_round : '—'}</span></div>
+      <div class="d-row"><span class="d-k">Waiting on</span><span class="d-v">${esc(r.waiting_on||'—')}</span></div>
+    </div>
+    <div class="d-section">
+      <div class="d-section-title">Agreement</div>
+      <div class="d-row"><span class="d-k">Status</span><span class="d-v">${agreementBadge(r.agreement_status)}</span></div>
+      <div class="d-row"><span class="d-k">Type</span><span class="d-v">${esc(r.agreement_type||'—')}</span></div>
+      <div class="d-row"><span class="d-k">Start date</span><span class="d-v">${esc(r.agreement_start||'—')}</span></div>
+      <div class="d-row"><span class="d-k">End date</span><span class="d-v">${esc(r.agreement_end||'—')}</span></div>
+      <div class="d-row"><span class="d-k">Remaining</span><span class="d-v">${expiryBadge(r)}</span></div>
+      <div class="d-row"><span class="d-k">Responsible</span><span class="d-v">${esc(r.responsible||'—')}</span></div>
+    </div>
+    <div class="d-section">
+      <div class="d-section-title">Product &amp; standard</div>
+      <div class="d-row"><span class="d-k">Product</span><span class="d-v">${esc(r.product||'—')}</span></div>
+      <div class="d-row"><span class="d-k">SE standard</span><span class="d-v">${esc(r.se_standard||'—')}</span></div>
+    </div>
+    <div class="d-section">
+      <div class="d-section-title">Registration &amp; qualification</div>
+      <div class="d-row"><span class="d-k">SE registered</span><span class="d-v">${esc(r.se_registered_date||'—')}</span></div>
+      <div class="d-row"><span class="d-k">NG registered</span><span class="d-v">${esc(r.ng_registered_date||'—')}</span></div>
+      <div class="d-row"><span class="d-k">Commercial reg.</span><span class="d-v">${esc(r.commercial_registration||'—')}</span></div>
+      <div class="d-row"><span class="d-k">PQ submitted</span><span class="d-v">${esc(r.pq_submit_date||'—')}</span></div>
+      <div class="d-row"><span class="d-k">Qualified</span><span class="d-v">${yesNoBadge(r.qualified)}</span></div>
+      <div class="d-row"><span class="d-k">Qualified date</span><span class="d-v">${esc(r.qualified_date||'—')}</span></div>
+    </div>
+    ${r.comment ? `<div class="d-section"><div class="d-section-title">Last update</div><div class="d-text">${esc(r.comment)}</div></div>` : ''}
+    ${r.next_action ? `<div class="d-section"><div class="d-section-title">Next action</div><div class="d-text">${esc(r.next_action)}</div></div>` : ''}
+    <div class="d-section">
+      <div class="d-section-title">Documents</div>
+      <div class="doc-btn-col">${docLinkButtons(r,'drawer')}</div>
+    </div>
+  `;
+  drawer.classList.add('open'); overlay.classList.add('open');
+}
+function closeDrawer(){ drawer.classList.remove('open'); overlay.classList.remove('open'); }
+document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+overlay.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
+
+// ---------- prospects ----------
+function stagePill(label, status){
+  const done = /qualified|yes|complete/i.test(status) && !/not/i.test(status);
+  const inprog = /progress|negotiation/i.test(status);
+  let cls = 'badge-notstarted';
+  if(done) cls='badge-yes'; else if(inprog) cls='badge-negotiation';
+  return `<span class="badge ${cls}">${esc(label)}: ${esc(status)}</span>`;
+}
+function renderProspects(){
+  document.getElementById('prospectGrid').innerHTML = DATA2.map(p=>`
+    <div class="prospect-card">
+      <div class="p-name">${esc(p.company)}</div>
+      <div class="p-product">${esc((p.linked_need ? p.linked_need+' — ' : '')+(p.product||'').replace(/\n/g,', '))}</div>
+      <div class="p-stages">
+        ${stagePill('Agreement', p.agreement_status)}
+        ${stagePill('Registration', p.registration_status)}
+        ${stagePill('Qualification', p.qualification_status)}
+      </div>
+      ${p.last_update ? `<div class="p-note">${esc(p.last_update)}</div>` : ''}
+    </div>`).join('');
+}
+
+document.getElementById('printBtn').addEventListener('click', ()=>window.print());
+document.getElementById('refreshBtn').addEventListener('click', loadData);
+
+// ---------- load ----------
+async function loadData(){
+  document.getElementById('loadingBanner').style.display = 'flex';
+  document.getElementById('errorBanner').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('lastUpdated').textContent = 'Loading…';
+  try{
+    const regRaw = await fetchCSV(REGISTER_CSV_URL);
+    DATA1 = regRaw.filter(r=>(r['Partner / Company']||'').trim()).map(mapRegisterRow);
+
+    let pipelineNotice = '';
+    try{
+      const pipeRaw = await fetchCSV(PIPELINE_CSV_URL);
+      DATA2 = pipeRaw.filter(r=>(r['Company']||'').trim()).map(mapPipelineRow);
+    }catch(pipeErr){
+      DATA2 = [];
+      pipelineNotice = 'Candidate Pipeline tab not connected yet — showing Register data only.';
+    }
+
+    computeKPIs(); renderFlow(); renderAlerts(); populateFilters(); renderTable(); renderProspects();
+
+    document.getElementById('loadingBanner').style.display = 'none';
+    document.getElementById('mainContent').style.display = '';
+    document.getElementById('lastUpdated').textContent = 'Refreshed ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+
+    if(pipelineNotice){
+      const grid = document.getElementById('prospectGrid');
+      grid.innerHTML = `<div class="prospect-card" style="grid-column:1/-1; text-align:center; color:var(--text-dim); font-family:var(--font-mono); font-size:11.5px;">${esc(pipelineNotice)}</div>`;
+    }
+  }catch(err){
+    document.getElementById('loadingBanner').style.display = 'none';
+    const box = document.getElementById('errorBanner');
+    box.style.display = 'block';
+    if(err.message === 'CONFIG_MISSING'){
+      box.innerHTML = `<h3>Not connected yet</h3><p>This dashboard needs the Register tab's published Google Sheet CSV link. Open this file's code and replace <code>REGISTER_CSV_URL</code> near the top with your sheet's published link (Google Sheet &gt; File &gt; Share &gt; Publish to web &gt; pick the tab &gt; CSV format &gt; Publish).</p>`;
+    } else {
+      box.innerHTML = `<h3>Could not load the sheet</h3><p>Check that the Register tab is still published to the web as CSV, and that the URL in the code is current. Error detail: <code>${esc(err.message||String(err))}</code></p>`;
+    }
+    document.getElementById('lastUpdated').textContent = 'Not connected';
+  }
+}
+loadData();
+
+</script>
+</body>
+</html>
