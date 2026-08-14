@@ -69,6 +69,8 @@ h1{font-family:var(--font-display); font-size:20px; font-weight:600; margin:0; l
 @keyframes dashmove{to{stroke-dashoffset:-24;}}
 .flow-node-circle{fill:var(--bg-panel-raised); stroke:var(--line); stroke-width:1.5;}
 .flow-node-circle.lit{stroke:var(--cyan); filter:drop-shadow(0 0 6px rgba(30,136,199,0.5));}
+.flow-node-circle.done{stroke:var(--green); filter:drop-shadow(0 0 6px rgba(31,157,101,0.5));}
+.flow-node-count.done{fill:var(--green);}
 .flow-stage-num{font-family:var(--font-mono); font-size:9.5px; fill:var(--bg); font-weight:600;}
 .flow-stage-badge{fill:var(--cyan);}
 
@@ -275,7 +277,7 @@ const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
 const esc = (s) => (s===null||s===undefined) ? '' : String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm = (s) => (s||'').replace(/\s+/g,' ').trim();
 
-const STAGE_LABELS = {3:'Comparison', 4:'Initial agreement', 5:'Registration', 6:'PQ cycle with SE'};
+const STAGE_LABELS = {3:'Comparison', 4:'Initial agreement', 5:'Registration', 6:'PQ cycle with SE', 7:'Qualified'};
 const MONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
 
 let DATA1 = [];
@@ -342,7 +344,7 @@ function mapRow(row, i){
   const qualified = g('Qualified');
 
   let stage = 3;
-  if(/yes/i.test(qualified)) stage = 6;
+  if(/yes/i.test(qualified)) stage = 7; // qualified = done, not "still in PQ cycle"
   else if(pqSubmitDate) stage = 6;
   else if(agreementStatus==='Signed') stage = 5;
   else if(agreementStatus==='In Negotiation') stage = 4;
@@ -403,6 +405,7 @@ function expiryBadge(row){
 function stageBadge(n, status){
   if(status==='On Hold') return `<span class="badge badge-onhold">On hold</span>`;
   if(!n) return `<span class="badge badge-notstarted">—</span>`;
+  if(n===7) return `<span class="badge badge-yes">${esc(STAGE_LABELS[n])}</span>`;
   return `<span class="badge badge-stage">${esc(STAGE_LABELS[n]||'')}</span>`;
 }
 
@@ -435,15 +438,16 @@ function computeKPIs(){
 }
 
 function renderFlow(){
-  const counts = {3:0,4:0,5:0,6:0};
+  const counts = {3:0,4:0,5:0,6:0,7:0};
   DATA1.forEach(r=>{ if(r.current_stage) counts[r.current_stage] = (counts[r.current_stage]||0)+1; });
   const stages = [
-    {label:'Comparison', sub:'in progress', count:counts[3]},
-    {label:'Initial agreement', sub:'in negotiation', count:counts[4]},
-    {label:'Registration', sub:'in progress', count:counts[5]},
-    {label:'PQ with SE', sub:'in progress', count:counts[6]},
+    {label:'Comparison', sub:'in progress', count:counts[3], done:false},
+    {label:'Initial agreement', sub:'in negotiation', count:counts[4], done:false},
+    {label:'Registration', sub:'in progress', count:counts[5], done:false},
+    {label:'PQ with SE', sub:'in progress', count:counts[6], done:false},
+    {label:'Qualified', sub:'complete', count:counts[7], done:true},
   ];
-  const w=1180,h=168,n=stages.length,margin=110,step=(w-margin*2)/(n-1),cy=66,r=40;
+  const w=1180,h=168,n=stages.length,margin=95,step=(w-margin*2)/(n-1),cy=66,r=38;
   let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">`;
   for(let i=0;i<n-1;i++){
     const x1=margin+step*i+r, x2=margin+step*(i+1)-r;
@@ -452,8 +456,9 @@ function renderFlow(){
   }
   stages.forEach((s,i)=>{
     const cx=margin+step*i, lit=s.count>0;
-    svg += `<circle cx="${cx}" cy="${cy}" r="${r}" class="flow-node-circle ${lit?'lit':''}"/>`;
-    svg += `<text x="${cx}" y="${cy+6}" text-anchor="middle" class="flow-node-count">${s.count}</text>`;
+    const circleClass = 'flow-node-circle' + (lit?' lit':'') + (s.done && lit?' done':'');
+    svg += `<circle cx="${cx}" cy="${cy}" r="${r}" class="${circleClass}"/>`;
+    svg += `<text x="${cx}" y="${cy+6}" text-anchor="middle" class="flow-node-count${s.done?' done':''}">${s.count}</text>`;
     svg += `<text x="${cx}" y="${cy+r+20}" text-anchor="middle" class="flow-node-label">${esc(s.label)}</text>`;
     svg += `<text x="${cx}" y="${cy+r+34}" text-anchor="middle" class="flow-node-sub">${esc(s.sub)}</text>`;
   });
@@ -493,7 +498,7 @@ let currentSort = {key:null, dir:1};
 function uniqueVals(field){ return Array.from(new Set(DATA1.map(r=>r[field]).filter(Boolean))).sort(); }
 function populateFilters(){
   const stSel = document.getElementById('filterStage');
-  [3,4,5,6].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n+' · '+STAGE_LABELS[n]; stSel.appendChild(o); });
+  [3,4,5,6,7].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=STAGE_LABELS[n]; stSel.appendChild(o); });
   const blSel = document.getElementById('filterBusinessLine');
   uniqueVals('business_line').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; blSel.appendChild(o); });
   const agSel = document.getElementById('filterAgreement');
