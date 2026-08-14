@@ -99,7 +99,7 @@ h1{font-family:var(--font-display); font-size:20px; font-weight:600; margin:0; l
 .toolbar input:focus, .toolbar select:focus{border-color:var(--cyan-dim);}
 
 .table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px;}
-table{width:100%; border-collapse:collapse; min-width:1080px;}
+table{width:100%; border-collapse:collapse; min-width:960px;}
 thead th{text-align:left; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); padding:11px 14px; background:var(--bg-panel-raised); border-bottom:1px solid var(--line); cursor:pointer; white-space:nowrap; user-select:none;}
 thead th:hover{color:var(--cyan);}
 tbody td{padding:11px 14px; border-bottom:1px solid var(--line); font-size:12.5px; vertical-align:middle;}
@@ -193,7 +193,7 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v9 · 14 Aug 2026, 13:22</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v10 · 14 Aug 2026, 13:38</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -260,7 +260,6 @@ tbody tr:last-child td{border-bottom:none;}
             <th data-sort="remaining_days">Expiry</th>
             <th data-sort="se_registered_date">SE reg.</th>
             <th data-sort="qualified">Qualified</th>
-            <th>Docs</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -374,6 +373,7 @@ function mapRow(row, i){
 
   return {
     sr: g('Sr.') || i+1,
+    rowId: i,
     partner: g('Partner'),
     responsible: g('Responsible Person'),
     business_line: normBL(g('Business Line')),
@@ -466,7 +466,6 @@ function docButton(label, url){
 function docButtonRow(r){
   return `<div class="doc-btn-row">${docButton('Agreement', r.doc_agreement)}${docButton('Matrix', r.doc_matrix)}${docButton('Brochure', r.doc_brochure)}</div>`;
 }
-
 function computeKPIs(){
   const total = DATA1.length;
   const signed = DATA1.filter(r=>r.agreement_status==='Signed').length;
@@ -538,7 +537,7 @@ function renderAlerts(){
   if(all.length===0) return;
   document.getElementById('alertsPanel').style.display = '';
   document.getElementById('alertsGrid').innerHTML = all.map(a=>`
-    <div class="alert-card" data-sr="${a.row.sr}">
+    <div class="alert-card" data-row-id="${a.row.rowId}">
       <span class="alert-tag ${a.tag}">${a.label}</span>
       <div class="a-partner">${esc(a.row.partner)}</div>
       <div class="a-detail">${esc((a.row.product||'').split('\n')[0])}</div>
@@ -546,7 +545,7 @@ function renderAlerts(){
     </div>`).join('');
   $$('.alert-card').forEach(card=>{
     card.addEventListener('click', ()=>{
-      const row = DATA1.find(r=>String(r.sr)===card.getAttribute('data-sr'));
+      const row = DATA1.find(r=>String(r.rowId)===card.getAttribute('data-row-id'));
       if(row) openDrawer(row);
     });
   });
@@ -597,7 +596,7 @@ function renderTable(){
   if(rows.length===0){ tbody.innerHTML=''; empty.style.display=''; return; }
   empty.style.display='none';
   tbody.innerHTML = rows.map(r=>`
-    <tr data-sr="${r.sr}">
+    <tr data-row-id="${r.rowId}">
       <td><div class="cell-partner">${esc(r.partner)}</div><div class="cell-sub">${esc(r.responsible||'')}</div></td>
       <td><div>${esc((r.product||'').split('\n')[0])}</div><div class="cell-sub">${esc(r.se_standard||'')}</div></td>
       <td>${esc(r.business_line||'—')}</td>
@@ -607,11 +606,10 @@ function renderTable(){
       <td>${expiryBadge(r)}</td>
       <td class="cell-mono">${esc(r.se_registered_date||'—')}</td>
       <td>${yesNoBadge(r.qualified)}</td>
-      <td>${docButtonRow(r)}</td>
     </tr>`).join('');
   $$('#tableBody tr').forEach(tr=>{
     tr.addEventListener('click', ()=>{
-      const row = DATA1.find(r=>String(r.sr)===tr.getAttribute('data-sr'));
+      const row = DATA1.find(r=>String(r.rowId)===tr.getAttribute('data-row-id'));
       if(row) openDrawer(row);
     });
   });
