@@ -90,6 +90,7 @@ h1{font-family:var(--font-display); font-size:20px; font-weight:600; margin:0; l
 .alert-tag.soon{background:rgba(217,138,21,0.15); color:var(--amber);}
 .alert-tag.reject{background:rgba(217,59,48,0.15); color:var(--red);}
 .alert-tag.onhold{background:rgba(125,151,172,0.15); color:var(--text-muted);}
+.alert-tag.notify{background:rgba(131,84,196,0.15); color:var(--purple);}
 
 .toolbar{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;}
 .toolbar input, .toolbar select{background:var(--bg-panel-raised); border:1px solid var(--line); color:var(--text); font-family:var(--font-body); font-size:12.5px; padding:9px 12px; border-radius:7px; outline:none; transition:border-color .15s;}
@@ -205,7 +206,7 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v13 · 17 Aug 2026, 23:47</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v14 · 17 Aug 2026, 23:57</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -247,7 +248,7 @@ tbody tr:last-child td{border-bottom:none;}
   <section class="panel alerts-panel" id="alertsPanel" style="display:none;">
     <div class="panel-head">
       <h2>Needs attention</h2>
-      <span class="panel-sub">Expired or soon-to-expire agreements, open rejections, and on-hold items</span>
+      <span class="panel-sub">Expired or soon-to-expire agreements, open rejections, on-hold items, and process notifications</span>
     </div>
     <div class="alerts-grid" id="alertsGrid"></div>
   </section>
@@ -295,8 +296,6 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
     <div class="dq-subhead">Data entry errors</div>
     <div class="dq-list" id="dqErrorsGrid"></div>
-    <div class="dq-subhead" style="margin-top:22px;">Process notifications</div>
-    <div class="dq-list" id="dqNotifGrid"></div>
   </section>
 
   <footer class="foot-note">
@@ -592,38 +591,40 @@ function renderFunnelSVG(containerId, stages){
 function renderCompanyFlow(){
   const seen = new Map();
   DATA1.forEach(r=>{ if(!seen.has(r.partner)) seen.set(r.partner, r.company_stage); });
-  const counts = {1:0,2:0,3:0,4:0};
-  seen.forEach(stage=>{ if(stage) counts[stage] = (counts[stage]||0)+1; });
+  const stages = seen.size ? Array.from(seen.values()) : [];
+  const cum = n => stages.filter(s=>s!==null && s>=n).length;
   renderFunnelSVG('flowSvgWrapCompany', [
-    {label:'Study', sub:'in progress', count:counts[1], done:false},
-    {label:'Initial agreement', sub:'in progress', count:counts[2], done:false},
-    {label:'Registration', sub:'in progress', count:counts[3], done:false},
-    {label:'Final agreement signing', sub:'complete', count:counts[4], done:true},
+    {label:'Study', sub:'reached', count:cum(1), done:false},
+    {label:'Initial agreement', sub:'reached', count:cum(2), done:false},
+    {label:'Registration', sub:'reached', count:cum(3), done:false},
+    {label:'Final agreement signing', sub:'complete', count:cum(4), done:true},
   ]);
 }
 function renderProductFlow(){
-  const counts = {1:0,2:0,3:0,4:0,5:0,6:0};
-  DATA1.forEach(r=>{ if(r.product_stage) counts[r.product_stage] = (counts[r.product_stage]||0)+1; });
+  const cum = n => DATA1.filter(r=>r.product_stage!==null && r.product_stage>=n).length;
   renderFunnelSVG('flowSvgWrapProduct', [
-    {label:'Study', sub:'in progress', count:counts[1], done:false},
-    {label:'Compliance matrix', sub:'in progress', count:counts[2], done:false},
-    {label:'PQ stage', sub:'in progress', count:counts[3], done:false},
-    {label:'Qualified', sub:'done', count:counts[4], done:true},
-    {label:'Factory visit', sub:'in progress', count:counts[5], done:false},
-    {label:'Listed in KSA', sub:'complete', count:counts[6], done:true},
+    {label:'Study', sub:'reached', count:cum(1), done:false},
+    {label:'Compliance matrix', sub:'reached', count:cum(2), done:false},
+    {label:'PQ stage', sub:'reached', count:cum(3), done:false},
+    {label:'Qualified', sub:'reached', count:cum(4), done:true},
+    {label:'Factory visit', sub:'reached', count:cum(5), done:false},
+    {label:'Listed in KSA', sub:'complete', count:cum(6), done:true},
   ]);
 }
+
 
 function renderAlerts(){
   const expired = DATA1.filter(r=>r.expired);
   const soon = DATA1.filter(r=>!r.expired && r.remaining_days!==null && r.remaining_days<=180);
   const rejections = DATA1.filter(r=>r.comment && /reject/i.test(r.comment));
   const onHold = DATA1.filter(r=>r.agreement_status==='On Hold');
+  const {notifications} = computeDataQuality();
   const all = [
     ...expired.map(r=>({row:r, tag:'expired', label:'Expired', text:'Expired '+(r.agreement_end||'')})),
     ...soon.map(r=>({row:r, tag:'soon', label:'Expiring soon', text: r.remaining_days+' days remaining'})),
     ...rejections.map(r=>({row:r, tag:'reject', label:'Rejected', text: r.reason || 'See comment'})),
     ...onHold.map(r=>({row:r, tag:'onhold', label:'On hold', text: r.reason || r.comment || 'Paused, no active movement'})),
+    ...notifications.map(n=>({row:n.row, tag:'notify', label:n.rule, text: n.message})),
   ];
   if(all.length===0) return;
   document.getElementById('alertsPanel').style.display = '';
@@ -671,7 +672,7 @@ function computeDataQuality(){
   return {errors, notifications};
 }
 function renderDataQuality(){
-  const {errors, notifications} = computeDataQuality();
+  const {errors} = computeDataQuality();
   const bySN = (a,b) => {
     const na = parseInt(a.row.sr), nb = parseInt(b.row.sr);
     const va = isNaN(na) ? Infinity : na;
@@ -679,9 +680,8 @@ function renderDataQuality(){
     return va - vb;
   };
   errors.sort(bySN);
-  notifications.sort(bySN);
 
-  document.getElementById('dqCount').textContent = errors.length+' data entry issue'+(errors.length!==1?'s':'')+' · '+notifications.length+' notification'+(notifications.length!==1?'s':'');
+  document.getElementById('dqCount').textContent = errors.length+' data entry issue'+(errors.length!==1?'s':'');
   const eList = document.getElementById('dqErrorsGrid');
   eList.innerHTML = errors.length===0 ? '<div class="dq-empty">No data entry errors found.</div>' : errors.map(e=>`
     <div class="dq-item dq-error" data-row-id="${e.row.rowId}">
@@ -689,14 +689,6 @@ function renderDataQuality(){
       <span class="dq-item-partner">${esc(e.row.partner)}</span>
       <span class="dq-tag">${esc(e.rule)}</span>
       <span class="dq-item-msg">${esc(e.message)}</span>
-    </div>`).join('');
-  const nList = document.getElementById('dqNotifGrid');
-  nList.innerHTML = notifications.length===0 ? '<div class="dq-empty">No open notifications.</div>' : notifications.map(n=>`
-    <div class="dq-item dq-notif" data-row-id="${n.row.rowId}">
-      <span class="dq-sn">SN ${esc(n.row.sr)}</span>
-      <span class="dq-item-partner">${esc(n.row.partner)}</span>
-      <span class="dq-tag dq-tag-notif">${esc(n.rule)}</span>
-      <span class="dq-item-msg">${esc(n.message)}</span>
     </div>`).join('');
   $$('.dq-item').forEach(item=>{
     item.addEventListener('click', ()=>{
