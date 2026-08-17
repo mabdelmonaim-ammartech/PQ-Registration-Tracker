@@ -125,12 +125,15 @@ tbody tr:last-child td{border-bottom:none;}
 .empty-state{padding:40px; text-align:center; color:var(--text-dim); font-family:var(--font-mono); font-size:12px;}
 
 .dq-subhead{font-family:var(--font-display); font-size:13.5px; font-weight:600; color:var(--text); margin-bottom:12px;}
-.dq-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:12px;}
-.dq-card{background:var(--bg-panel-raised); border:1px solid var(--line); border-radius:10px; padding:12px 14px; cursor:pointer; transition:border-color .15s;}
-.dq-card.dq-error{border-color:rgba(217,59,48,0.3);}
-.dq-card.dq-error:hover{border-color:var(--red);}
-.dq-card.dq-notif{border-color:rgba(217,138,21,0.35);}
-.dq-card.dq-notif:hover{border-color:var(--amber);}
+.dq-list{display:flex; flex-direction:column; gap:8px;}
+.dq-item{display:flex; align-items:center; gap:14px; background:var(--bg-panel-raised); border:1px solid var(--line); border-radius:8px; padding:10px 14px; cursor:pointer; transition:border-color .15s; flex-wrap:wrap;}
+.dq-item.dq-error{border-color:rgba(217,59,48,0.3);}
+.dq-item.dq-error:hover{border-color:var(--red);}
+.dq-item.dq-notif{border-color:rgba(217,138,21,0.35);}
+.dq-item.dq-notif:hover{border-color:var(--amber);}
+.dq-sn{font-family:var(--font-mono); font-size:11px; color:var(--text-dim); min-width:48px; flex-shrink:0;}
+.dq-item-partner{font-family:var(--font-display); font-weight:600; font-size:13px; min-width:150px; flex-shrink:0;}
+.dq-item-msg{font-size:12px; color:var(--text); flex:1; min-width:200px;}
 .dq-tag{display:inline-block; font-family:var(--font-mono); font-size:9.5px; text-transform:uppercase; letter-spacing:0.05em; padding:2px 7px; border-radius:20px; margin-bottom:6px; background:rgba(217,59,48,0.15); color:var(--red);}
 .dq-tag-notif{background:rgba(217,138,21,0.15); color:var(--amber);}
 .dq-partner{font-family:var(--font-display); font-weight:600; font-size:13.5px;}
@@ -202,7 +205,7 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v12 · 17 Aug 2026, 23:33</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v13 · 17 Aug 2026, 23:47</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -291,9 +294,9 @@ tbody tr:last-child td{border-bottom:none;}
       <span class="panel-sub" id="dqCount">—</span>
     </div>
     <div class="dq-subhead">Data entry errors</div>
-    <div class="dq-grid" id="dqErrorsGrid"></div>
+    <div class="dq-list" id="dqErrorsGrid"></div>
     <div class="dq-subhead" style="margin-top:22px;">Process notifications</div>
-    <div class="dq-grid" id="dqNotifGrid"></div>
+    <div class="dq-list" id="dqNotifGrid"></div>
   </section>
 
   <footer class="foot-note">
@@ -605,7 +608,7 @@ function renderProductFlow(){
     {label:'Study', sub:'in progress', count:counts[1], done:false},
     {label:'Compliance matrix', sub:'in progress', count:counts[2], done:false},
     {label:'PQ stage', sub:'in progress', count:counts[3], done:false},
-    {label:'Qualified', sub:'in progress', count:counts[4], done:false},
+    {label:'Qualified', sub:'done', count:counts[4], done:true},
     {label:'Factory visit', sub:'in progress', count:counts[5], done:false},
     {label:'Listed in KSA', sub:'complete', count:counts[6], done:true},
   ]);
@@ -669,26 +672,35 @@ function computeDataQuality(){
 }
 function renderDataQuality(){
   const {errors, notifications} = computeDataQuality();
+  const bySN = (a,b) => {
+    const na = parseInt(a.row.sr), nb = parseInt(b.row.sr);
+    const va = isNaN(na) ? Infinity : na;
+    const vb = isNaN(nb) ? Infinity : nb;
+    return va - vb;
+  };
+  errors.sort(bySN);
+  notifications.sort(bySN);
+
   document.getElementById('dqCount').textContent = errors.length+' data entry issue'+(errors.length!==1?'s':'')+' · '+notifications.length+' notification'+(notifications.length!==1?'s':'');
-  const eGrid = document.getElementById('dqErrorsGrid');
-  eGrid.innerHTML = errors.length===0 ? '<div class="dq-empty">No data entry errors found.</div>' : errors.map(e=>`
-    <div class="dq-card dq-error" data-row-id="${e.row.rowId}">
+  const eList = document.getElementById('dqErrorsGrid');
+  eList.innerHTML = errors.length===0 ? '<div class="dq-empty">No data entry errors found.</div>' : errors.map(e=>`
+    <div class="dq-item dq-error" data-row-id="${e.row.rowId}">
+      <span class="dq-sn">SN ${esc(e.row.sr)}</span>
+      <span class="dq-item-partner">${esc(e.row.partner)}</span>
       <span class="dq-tag">${esc(e.rule)}</span>
-      <div class="dq-partner">${esc(e.row.partner)}</div>
-      <div class="dq-detail">${esc((e.row.product||'').split('\n')[0])}</div>
-      <div class="dq-msg">${esc(e.message)}</div>
+      <span class="dq-item-msg">${esc(e.message)}</span>
     </div>`).join('');
-  const nGrid = document.getElementById('dqNotifGrid');
-  nGrid.innerHTML = notifications.length===0 ? '<div class="dq-empty">No open notifications.</div>' : notifications.map(n=>`
-    <div class="dq-card dq-notif" data-row-id="${n.row.rowId}">
+  const nList = document.getElementById('dqNotifGrid');
+  nList.innerHTML = notifications.length===0 ? '<div class="dq-empty">No open notifications.</div>' : notifications.map(n=>`
+    <div class="dq-item dq-notif" data-row-id="${n.row.rowId}">
+      <span class="dq-sn">SN ${esc(n.row.sr)}</span>
+      <span class="dq-item-partner">${esc(n.row.partner)}</span>
       <span class="dq-tag dq-tag-notif">${esc(n.rule)}</span>
-      <div class="dq-partner">${esc(n.row.partner)}</div>
-      <div class="dq-detail">${esc((n.row.product||'').split('\n')[0])}</div>
-      <div class="dq-msg">${esc(n.message)}</div>
+      <span class="dq-item-msg">${esc(n.message)}</span>
     </div>`).join('');
-  $$('.dq-card').forEach(card=>{
-    card.addEventListener('click', ()=>{
-      const row = DATA1.find(r=>String(r.rowId)===card.getAttribute('data-row-id'));
+  $$('.dq-item').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      const row = DATA1.find(r=>String(r.rowId)===item.getAttribute('data-row-id'));
       if(row) openDrawer(row);
     });
   });
