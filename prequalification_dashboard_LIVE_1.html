@@ -27,7 +27,7 @@ body{
 main{position:relative; z-index:1; max-width:1280px; margin:0 auto; padding:0 28px 60px;}
 
 .security-banner{
-  max-width:1280px; margin:16px auto 0; padding:11px 28px; display:flex; align-items:center; gap:10px;
+  max-width:1280px; margin:0 auto; padding:11px 28px; display:flex; align-items:center; gap:10px;
   color:var(--red); font-size:12px; line-height:1.5; background:rgba(217,59,48,0.06);
 }
 .security-banner svg{flex-shrink:0;}
@@ -54,13 +54,26 @@ h1{font-family:var(--font-display); font-size:20px; font-weight:600; margin:0; l
 .btn-ghost:hover{background:rgba(111,179,222,0.12); color:#fff;}
 .btn-ghost.small{padding:6px 10px; font-size:10.5px;}
 
+.page-tabs{
+  max-width:1280px; margin:16px auto 0; padding:0 28px; display:flex; gap:8px;
+}
+.page-tab{
+  font-family:var(--font-display); font-size:13.5px; font-weight:600; color:var(--text-muted);
+  background:var(--bg-panel); border:1px solid var(--line); border-bottom:none;
+  padding:11px 20px; border-radius:10px 10px 0 0; cursor:pointer; transition:all .15s ease;
+}
+.page-tab:hover{color:var(--text);}
+.page-tab.active{color:var(--cyan); background:var(--bg-panel); border-color:var(--cyan-dim); position:relative;}
+.page-tab.active::after{content:''; position:absolute; bottom:-1px; left:0; right:0; height:2px; background:var(--bg-panel);}
+
 .panel{background:var(--bg-panel); border:1px solid var(--line); border-radius:14px; padding:24px 26px; margin-top:24px;}
+.page > .panel:first-child{margin-top:0; border-top-left-radius:0;}
 .panel-head{display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-bottom:18px;}
 .panel-head h2{font-family:var(--font-display); font-size:16px; font-weight:600; margin:0;}
 .panel-sub{font-size:12px; color:var(--text-muted); font-family:var(--font-mono);}
 
-.flow-panel{margin-top:18px;}
-#flowSvgWrapCompany svg, #flowSvgWrapProduct svg{width:100%; height:auto; display:block;}
+.flow-panel{margin-top:0;}
+#flowSvgWrapAg svg, #flowSvgWrapPq svg{width:100%; height:auto; display:block;}
 .flow-node-label{font-family:var(--font-mono); font-size:10.5px; fill:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em;}
 .flow-node-sub{font-family:var(--font-mono); font-size:9.5px; fill:var(--text-dim);}
 .flow-node-count{font-family:var(--font-display); font-size:24px; font-weight:700; fill:var(--text);}
@@ -108,6 +121,8 @@ tbody tr:last-child td{border-bottom:none;}
 .cell-partner{font-family:var(--font-display); font-weight:600; font-size:13px;}
 .cell-sub{color:var(--text-dim); font-size:10.5px; margin-top:2px;}
 .cell-mono{font-family:var(--font-mono); font-size:11.5px; color:var(--text-muted);}
+.sn-code{font-family:var(--font-mono); font-size:11.5px; color:var(--cyan); background:rgba(30,136,199,0.08); padding:2px 7px; border-radius:5px;}
+.sn-link{cursor:pointer; text-decoration:underline; text-decoration-style:dotted;}
 
 .badge{display:inline-flex; align-items:center; gap:5px; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:0.03em; padding:3px 9px; border-radius:20px; white-space:nowrap;}
 .badge::before{content:''; width:6px; height:6px; border-radius:50%; background:currentColor;}
@@ -115,8 +130,6 @@ tbody tr:last-child td{border-bottom:none;}
 .badge-negotiation{background:rgba(217,138,21,0.12); color:var(--amber);}
 .badge-onhold{background:rgba(125,151,172,0.15); color:var(--text-muted);}
 .badge-notstarted{background:rgba(125,151,172,0.1); color:var(--text-dim);}
-.badge-exclusive{background:rgba(30,136,199,0.12); color:var(--cyan);}
-.badge-unspec{background:rgba(125,151,172,0.12); color:var(--text-muted);}
 .badge-yes{background:rgba(31,157,101,0.12); color:var(--green);}
 .badge-no{background:rgba(125,151,172,0.1); color:var(--text-dim);}
 .badge-expired{background:rgba(217,59,48,0.15); color:var(--red);}
@@ -130,17 +143,11 @@ tbody tr:last-child td{border-bottom:none;}
 .dq-item{display:flex; align-items:center; gap:14px; background:var(--bg-panel-raised); border:1px solid var(--line); border-radius:8px; padding:10px 14px; cursor:pointer; transition:border-color .15s; flex-wrap:wrap;}
 .dq-item.dq-error{border-color:rgba(217,59,48,0.3);}
 .dq-item.dq-error:hover{border-color:var(--red);}
-.dq-item.dq-notif{border-color:rgba(217,138,21,0.35);}
-.dq-item.dq-notif:hover{border-color:var(--amber);}
-.dq-sn{font-family:var(--font-mono); font-size:11px; color:var(--text-dim); min-width:48px; flex-shrink:0;}
+.dq-sn{font-family:var(--font-mono); font-size:11px; color:var(--text-dim); min-width:120px; flex-shrink:0;}
 .dq-item-partner{font-family:var(--font-display); font-weight:600; font-size:13px; min-width:150px; flex-shrink:0;}
+.dq-tag{display:inline-block; font-family:var(--font-mono); font-size:9.5px; text-transform:uppercase; letter-spacing:0.05em; padding:2px 7px; border-radius:20px; background:rgba(217,59,48,0.15); color:var(--red);}
 .dq-item-msg{font-size:12px; color:var(--text); flex:1; min-width:200px;}
-.dq-tag{display:inline-block; font-family:var(--font-mono); font-size:9.5px; text-transform:uppercase; letter-spacing:0.05em; padding:2px 7px; border-radius:20px; margin-bottom:6px; background:rgba(217,59,48,0.15); color:var(--red);}
-.dq-tag-notif{background:rgba(217,138,21,0.15); color:var(--amber);}
-.dq-partner{font-family:var(--font-display); font-weight:600; font-size:13.5px;}
-.dq-detail{font-size:11px; color:var(--text-muted); margin-top:2px; font-family:var(--font-mono);}
-.dq-msg{font-size:11.5px; color:var(--text); margin-top:5px; line-height:1.4;}
-.dq-empty{padding:20px; text-align:center; color:var(--text-dim); font-family:var(--font-mono); font-size:12px; grid-column:1/-1;}
+.dq-empty{padding:20px; text-align:center; color:var(--text-dim); font-family:var(--font-mono); font-size:12px;}
 
 .doc-btn-col{display:flex; flex-direction:column; gap:8px;}
 .doc-btn{
@@ -185,10 +192,12 @@ tbody tr:last-child td{border-bottom:none;}
   .kpi-strip{grid-template-columns:repeat(2,1fr);}
   .topbar{padding:14px 16px; flex-wrap:wrap; gap:10px;}
   main{padding:0 14px 40px;}
+  .page-tabs{padding:0 14px;}
   table{min-width:900px;}
 }
 @media print{
-  .topbar, .toolbar, .btn-ghost, .drawer, .drawer-overlay{display:none !important;}
+  .topbar, .toolbar, .btn-ghost, .drawer, .drawer-overlay, .page-tabs{display:none !important;}
+  .page{display:block !important;}
   body{background:#fff; color:#111;}
   .panel{border:1px solid #ccc; background:#fff;}
 }
@@ -206,12 +215,17 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v14 · 17 Aug 2026, 23:57</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v15 · 29 Aug 2026, 12:33</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
   </div>
 </header>
+
+<nav class="page-tabs">
+  <button class="page-tab active" id="tabAgBtn" data-page="ag">Agreements &amp; Registration</button>
+  <button class="page-tab" id="tabPqBtn" data-page="pq">PQ Follow Up</button>
+</nav>
 
 <div class="security-banner">
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -227,79 +241,129 @@ tbody tr:last-child td{border-bottom:none;}
 
 <main id="mainContent" style="display:none;">
 
-  <section class="panel flow-panel">
-    <div class="panel-head">
-      <h2>Company registration funnel</h2>
-      <span class="panel-sub">Companies (deduplicated), not products — where each partner sits in onboarding</span>
-    </div>
-    <div id="flowSvgWrapCompany"></div>
-  </section>
+  <!-- ============ AGREEMENTS PAGE ============ -->
+  <div id="pageAg" class="page">
+    <section class="panel flow-panel">
+      <div class="panel-head">
+        <h2>Agreement &amp; registration funnel</h2>
+        <span class="panel-sub">Every agreement — where it sits in company onboarding</span>
+      </div>
+      <div id="flowSvgWrapAg"></div>
+    </section>
 
-  <section class="panel flow-panel">
-    <div class="panel-head">
-      <h2>Product prequalification funnel</h2>
-      <span class="panel-sub">Every tracked product line — where it sits in the SE/NG qualification process</span>
-    </div>
-    <div id="flowSvgWrapProduct"></div>
-  </section>
+    <section class="kpi-strip" id="kpiStripAg"></section>
 
-  <section class="kpi-strip" id="kpiStrip"></section>
+    <section class="panel alerts-panel" id="alertsPanelAg" style="display:none;">
+      <div class="panel-head">
+        <h2>Needs attention</h2>
+        <span class="panel-sub">Expired or soon-to-expire agreements, on-hold items, and process notifications</span>
+      </div>
+      <div class="alerts-grid" id="alertsGridAg"></div>
+    </section>
 
-  <section class="panel alerts-panel" id="alertsPanel" style="display:none;">
-    <div class="panel-head">
-      <h2>Needs attention</h2>
-      <span class="panel-sub">Expired or soon-to-expire agreements, open rejections, on-hold items, and process notifications</span>
-    </div>
-    <div class="alerts-grid" id="alertsGrid"></div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head">
-      <h2>Prequalification register</h2>
-      <span class="panel-sub" id="registerCount">—</span>
-    </div>
-
-    <div class="toolbar">
-      <input type="text" id="searchInput" placeholder="Search partner, product, standard..." />
-      <select id="filterStage"><option value="">All product stages</option></select>
-      <select id="filterBusinessLine"><option value="">All business lines</option></select>
-      <select id="filterAgreement"><option value="">All agreement status</option></select>
-      <select id="filterAgentType"><option value="">All agent types</option></select>
-      <button class="btn-ghost small" id="resetFilters">Reset</button>
-    </div>
-
-    <div class="table-wrap">
-      <table id="mainTable">
-        <thead>
-          <tr>
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Agreements register</h2>
+        <span class="panel-sub" id="registerCountAg">—</span>
+      </div>
+      <div class="toolbar">
+        <input type="text" id="searchAg" placeholder="Search agreement SN, partner, product..." />
+        <select id="filterStageAg"><option value="">All stages</option></select>
+        <select id="filterBLAg"><option value="">All business lines</option></select>
+        <select id="filterStatusAg"><option value="">All statuses</option></select>
+        <button class="btn-ghost small" id="resetAg">Reset</button>
+      </div>
+      <div class="table-wrap">
+        <table id="tableAg">
+          <thead><tr>
+            <th data-sort="sr">Agreement SN</th>
             <th data-sort="partner">Partner</th>
-            <th data-sort="product">Product</th>
+            <th data-sort="products">Products</th>
             <th data-sort="business_line">Line</th>
-            <th data-sort="product_stage">Product stage</th>
-            <th data-sort="agreement_status">Agreement</th>
-            <th data-sort="agent_type">Agent type</th>
+            <th data-sort="stage">Stage</th>
+            <th data-sort="agreement_status">Status</th>
             <th data-sort="remaining_days">Expiry</th>
             <th data-sort="se_reg_status">SE reg.</th>
-            <th data-sort="qualified">Qualified</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </div>
-    <div id="emptyState" class="empty-state" style="display:none;">No records match these filters.</div>
-  </section>
+            <th data-sort="ng_reg_status">NG reg.</th>
+          </tr></thead>
+          <tbody id="bodyAg"></tbody>
+        </table>
+      </div>
+      <div id="emptyAg" class="empty-state" style="display:none;">No records match these filters.</div>
+    </section>
 
-  <section class="panel dq-panel">
-    <div class="panel-head">
-      <h2>Data quality</h2>
-      <span class="panel-sub" id="dqCount">—</span>
-    </div>
-    <div class="dq-subhead">Data entry errors</div>
-    <div class="dq-list" id="dqErrorsGrid"></div>
-  </section>
+    <section class="panel dq-panel">
+      <div class="panel-head">
+        <h2>Data quality</h2>
+        <span class="panel-sub" id="dqCountAg">—</span>
+      </div>
+      <div class="dq-subhead">Data entry errors</div>
+      <div class="dq-list" id="dqListAg"></div>
+    </section>
+  </div>
+
+  <!-- ============ PQ PAGE ============ -->
+  <div id="pagePq" class="page" style="display:none;">
+    <section class="panel flow-panel">
+      <div class="panel-head">
+        <h2>Product prequalification funnel</h2>
+        <span class="panel-sub">Every tracked product — where it sits in the SE/NG qualification process</span>
+      </div>
+      <div id="flowSvgWrapPq"></div>
+    </section>
+
+    <section class="kpi-strip" id="kpiStripPq"></section>
+
+    <section class="panel alerts-panel" id="alertsPanelPq" style="display:none;">
+      <div class="panel-head">
+        <h2>Needs attention</h2>
+        <span class="panel-sub">Rejections and on-hold compliance items</span>
+      </div>
+      <div class="alerts-grid" id="alertsGridPq"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>PQ register</h2>
+        <span class="panel-sub" id="registerCountPq">—</span>
+      </div>
+      <div class="toolbar">
+        <input type="text" id="searchPq" placeholder="Search PQ SN, partner, product..." />
+        <select id="filterStagePq"><option value="">All stages</option></select>
+        <select id="filterBLPq"><option value="">All business lines</option></select>
+        <select id="filterCompliancePq"><option value="">All compliance status</option></select>
+        <button class="btn-ghost small" id="resetPq">Reset</button>
+      </div>
+      <div class="table-wrap">
+        <table id="tablePq">
+          <thead><tr>
+            <th data-sort="sr">PQ SN</th>
+            <th data-sort="partner">Partner</th>
+            <th data-sort="product">Product</th>
+            <th data-sort="agreement_sn">Agreement SN</th>
+            <th data-sort="business_line">Line</th>
+            <th data-sort="stage">Stage</th>
+            <th data-sort="compliance_status">Compliance</th>
+            <th data-sort="qualified">Qualified</th>
+          </tr></thead>
+          <tbody id="bodyPq"></tbody>
+        </table>
+      </div>
+      <div id="emptyPq" class="empty-state" style="display:none;">No records match these filters.</div>
+    </section>
+
+    <section class="panel dq-panel">
+      <div class="panel-head">
+        <h2>Data quality</h2>
+        <span class="panel-sub" id="dqCountPq">—</span>
+      </div>
+      <div class="dq-subhead">Data entry errors</div>
+      <div class="dq-list" id="dqListPq"></div>
+    </section>
+  </div>
 
   <footer class="foot-note">
-    <p>Live view of your working tracker sheet, read directly. "Agent type" is a best-effort read of the word "exclusive" in the Condition/Result/Comment/Reason columns. Company stage is derived by combining Agreement Status with SE/NG registration progress (see version notes); product stage is derived from Compliance Status, PQ Submit Date, Qualified, Waiting Factory Visit/Sample Status and Shortlisted.</p>
+    <p>Live view of two linked Google Sheet tabs — Agreements &amp; Registration and PQ Follow Up, joined by Agreement SN. Stage logic: company stage combines Agreement Status with SE/NG registration progress; product stage is cumulative across Compliance Status, PQ Submit Date, Qualified, Waiting Factory Visit/Sample Status and Shortlisted.</p>
   </footer>
 
 </main>
@@ -308,7 +372,7 @@ tbody tr:last-child td{border-bottom:none;}
 <aside class="drawer" id="drawer">
   <div class="drawer-head">
     <div>
-      <div class="eyebrow" id="drawerEyebrow">PARTNER RECORD</div>
+      <div class="eyebrow" id="drawerEyebrow">RECORD</div>
       <h3 id="drawerTitle">—</h3>
     </div>
     <button class="btn-icon" id="drawerClose">&times;</button>
@@ -318,9 +382,10 @@ tbody tr:last-child td{border-bottom:none;}
 
 <script>
 /* ============================================================
-   CONFIG — paste your published Google Sheet CSV URL here.
+   CONFIG — one published CSV link per tab.
    ============================================================ */
-const REGISTER_CSV_URL  = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSWZEn_sU14OWjk58yZUzvLuAjbiPi7jlpf4AuT_coLodNewo0r2LRvajoayL028A/pub?output=csv";
+const AGREEMENTS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSWZEn_sU14OWjk58yZUzvLuAjbiPi7jlpf4AuT_coLodNewo0r2LRvajoayL028A/pub?gid=1402571685&single=true&output=csv";
+const PQ_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSWZEn_sU14OWjk58yZUzvLuAjbiPi7jlpf4AuT_coLodNewo0r2LRvajoayL028A/pub?gid=31467374&single=true&output=csv";
 
 
 const $ = (sel, ctx=document) => ctx.querySelector(sel);
@@ -328,11 +393,13 @@ const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
 const esc = (s) => (s===null||s===undefined) ? '' : String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm = (s) => (s||'').replace(/\s+/g,' ').trim();
 
-const COMPANY_STAGE_LABELS = {1:'Study', 2:'Initial agreement', 3:'Registration', 4:'Final agreement signing'};
-const PRODUCT_STAGE_LABELS = {1:'Study', 2:'Compliance matrix', 3:'PQ stage', 4:'Qualified', 5:'Factory visit', 6:'Listed in KSA'};
+const AG_STAGE_LABELS = {1:'Study', 2:'Initial agreement', 3:'Registration', 4:'Final agreement signing'};
+const PQ_STAGE_LABELS = {1:'Study', 2:'Compliance matrix', 3:'PQ stage', 4:'Qualified', 5:'Factory visit', 6:'Listed in KSA'};
 const MONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
 
-let DATA1 = [];
+let DATA_AG = [];
+let DATA_PQ = [];
+let activePage = 'ag';
 
 function fetchCSV(url){
   return new Promise((resolve, reject) => {
@@ -342,7 +409,6 @@ function fetchCSV(url){
   });
 }
 
-// Tries several date formats seen across the sheet's history: D-Mon-YY, D Mon YYYY, D/M/YYYY, YYYY-MM-DD
 function parseSheetDate(str){
   if(!str) return null;
   const s = String(str).trim();
@@ -368,7 +434,6 @@ function parseSheetDate(str){
   }
   m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if(m){
-    // sheet uses day-first entries (e.g. 14/8/2026)
     const d = new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]));
     return isNaN(d.getTime()) ? null : d;
   }
@@ -379,7 +444,6 @@ function blank(v){
   const s=(v||'').trim();
   return !s || s==='____' || /^n\/?a$/i.test(s) ? '' : s;
 }
-
 function normBL(v){
   const s = blank(v).toUpperCase().replace(/\.$/,'');
   if(s==='NG') return 'National Grid (NG)';
@@ -387,27 +451,26 @@ function normBL(v){
   if(s==='BOTH') return 'Both';
   return blank(v) || null;
 }
-
 function makeGetter(row){
   const map = {};
   Object.keys(row).forEach(k => { map[norm(k)] = row[k]; });
   return (label) => blank(map[label]);
 }
 
-function computeCompanyStage(r){
+function computeAgStage(r){
   if(r.agreement_status==='Not Started') return 1;
   if(r.agreement_status==='On Hold') return null;
   const seRelevant = r.business_line==='Distribution (SE)' || r.business_line==='Both' || !r.business_line;
   const ngRelevant = r.business_line==='National Grid (NG)' || r.business_line==='Both';
   const seDone = r.se_reg_status==='Registered';
   const ngDone = r.ng_reg_status==='Registered';
-  const registrationComplete = (seRelevant ? seDone : true) && (ngRelevant ? ngDone : true);
-  const registrationStarted = ['In Progress','Registered'].includes(r.se_reg_status) || ['In Progress','Registered'].includes(r.ng_reg_status);
-  if(r.agreement_status==='Signed') return registrationComplete ? 4 : 3;
-  if(r.agreement_status==='In Negotiation') return registrationStarted ? 3 : 2;
+  const complete = (seRelevant ? seDone : true) && (ngRelevant ? ngDone : true);
+  const started = ['In Progress','Registered'].includes(r.se_reg_status) || ['In Progress','Registered'].includes(r.ng_reg_status);
+  if(r.agreement_status==='Signed') return complete ? 4 : 3;
+  if(r.agreement_status==='In Negotiation') return started ? 3 : 2;
   return 1;
 }
-function computeProductStage(r){
+function computePqStage(r){
   if(r.shortlisted==='Yes') return 6;
   if(r.qualified==='Yes') return r.waiting_visit_status==='Yes' ? 5 : 4;
   if(r.pq_submit_date) return 3;
@@ -416,54 +479,55 @@ function computeProductStage(r){
   return 1;
 }
 
-function mapRow(row, i){
+function mapAgRow(row, i){
   const g = makeGetter(row);
   const agreementStatus = g('Status of Agreement') || 'Not Started';
-  const agreementStartRaw = g('Start Date of Agreement');
-  const agreementEndRaw = g('End Date of Agreement');
-  const agreementEnd = parseSheetDate(agreementEndRaw);
+  const agreementEnd = parseSheetDate(g('End Date of Agreement'));
   const today = new Date();
   let remainingDays=null, expired=false;
   if(agreementEnd){ remainingDays = daysBetween(agreementEnd, today); expired = remainingDays<0; }
-
-  const condition = g('Condition');
-  const result = g('Result / Consequence if Achieved');
-  const comment = g('Comment');
-  const reason = g('Reason');
-  const textBlob = (condition+' '+result+' '+comment+' '+reason).toLowerCase();
-  let agentType = 'Unspecified';
-  if(/non-exclusiv|non exclusiv/.test(textBlob)) agentType='Non-Exclusive';
-  else if(/exclusiv/.test(textBlob)) agentType='Exclusive';
-
   const r = {
-    sr: g('SN.') || i+1,
+    sr: g('Agreement SN.') || ('ROW'+(i+1)),
     rowId: i,
     partner: g('Partner'),
-    product: g('Product'),
-    responsible: g('Responsible Person'),
-    agreement_status: agreementStatus,
+    products: g('Products in Agreemnet'),
+    business_line: normBL(g('Business Line')),
     legal_revision: g('Legal Revision of Agreement Status'),
-    agreement_start: agreementStartRaw,
-    agreement_end: agreementEndRaw,
+    agreement_status: agreementStatus,
+    agreement_type: g('Agreement Type'),
+    agreement_start: g('Start Date of Agreement'),
+    agreement_end: g('End Date of Agreement'),
     remaining_days: remainingDays,
     expired: expired,
-    agent_type: agentType,
-    condition, result, comment, reason,
-    agreement_product: g('Agreement Product'),
+    condition: g('Condition'),
+    result: g('Result / Consequence if Achieved'),
     se_standard: g('SE Standard'),
-    se_product: g('SE Product'),
-    need_pq: g('Need PQ?'),
     se_reg_status: g('SE Registration Status'),
     se_registered_date: g('SE Registeration Date'),
     ng_reg_status: g('NG Registration Status'),
     ng_registered_date: g('NG Registered Date'),
     commercial_registration: g('Commercial Registration'),
+    doc_agreement: g('Agreement Doc'),
+  };
+  r.stage = computeAgStage(r);
+  return r;
+}
+function mapPqRow(row, i){
+  const g = makeGetter(row);
+  const r = {
+    sr: g('PQ SN.') || ('ROW'+(i+1)),
+    rowId: i,
+    partner: g('Partner'),
+    product: g('Product'),
+    agreement_sn: g('Agreement SN.'),
     compliance_status: g('Compliance Status'),
     business_line: normBL(g('Business Line')),
     documents_ready_date: g('Documents Ready Date'),
     pq_submit_date: g('PQ Submit Date'),
     last_vendor_reply: g('Last Vendor reply Date'),
     last_comment_se_date: g('Last Comments SE Date'),
+    comment: g('Comment'),
+    reason: g('Reason'),
     waiting_visit_status: g('Waiting Factory Visit/Sample Status'),
     visit_date: g('Visit/Sample Date'),
     qualified: g('Qualified'),
@@ -471,22 +535,17 @@ function mapRow(row, i){
     shortlisted: g('Shortlisted'),
     list_field: g('List'),
     vendor_number: g('Vendor Number'),
-    doc_agreement: g('Agreement Doc'),
     doc_matrix: g('Compliance Matrix Doc'),
     doc_brochure: g('Brochure Doc'),
+    doc_agreement: g('Agreement Doc'),
   };
-  r.company_stage = computeCompanyStage(r);
-  r.product_stage = computeProductStage(r);
+  r.stage = computePqStage(r);
   return r;
 }
 
 function agreementBadge(status){
   const map = {'Signed':'badge-signed', 'In Negotiation':'badge-negotiation', 'On Hold':'badge-onhold', 'Not Started':'badge-notstarted'};
   return `<span class="badge ${map[status]||'badge-notstarted'}">${esc(status||'Not Started')}</span>`;
-}
-function agentBadge(t){
-  const map = {'Exclusive':'badge-exclusive','Non-Exclusive':'badge-exclusive','Unspecified':'badge-unspec'};
-  return `<span class="badge ${map[t]||'badge-unspec'}">${esc(t)}</span>`;
 }
 function yesNoBadge(v){
   if(!v) return `<span class="badge badge-no">—</span>`;
@@ -503,17 +562,17 @@ function expiryBadge(row){
   if(row.remaining_days<=180) return `<span class="badge badge-soon">${row.remaining_days}d left</span>`;
   return `<span class="cell-mono">${row.remaining_days}d</span>`;
 }
-function companyStageBadge(n, status){
+function agStageBadge(n, status){
   if(status==='On Hold') return `<span class="badge badge-onhold">On hold</span>`;
   if(!n) return `<span class="badge badge-notstarted">—</span>`;
-  if(n===4) return `<span class="badge badge-yes">${esc(COMPANY_STAGE_LABELS[n])}</span>`;
-  return `<span class="badge badge-stage">${esc(COMPANY_STAGE_LABELS[n]||'')}</span>`;
+  if(n===4) return `<span class="badge badge-yes">${esc(AG_STAGE_LABELS[n])}</span>`;
+  return `<span class="badge badge-stage">${esc(AG_STAGE_LABELS[n]||'')}</span>`;
 }
-function productStageBadge(n, complianceStatus){
+function pqStageBadge(n, complianceStatus){
   if(complianceStatus==='On Hold') return `<span class="badge badge-onhold">On hold</span>`;
   if(!n) return `<span class="badge badge-notstarted">—</span>`;
-  if(n===6) return `<span class="badge badge-yes">${esc(PRODUCT_STAGE_LABELS[n])}</span>`;
-  return `<span class="badge badge-stage">${esc(PRODUCT_STAGE_LABELS[n]||'')}</span>`;
+  if(n===6) return `<span class="badge badge-yes">${esc(PQ_STAGE_LABELS[n])}</span>`;
+  return `<span class="badge badge-stage">${esc(PQ_STAGE_LABELS[n]||'')}</span>`;
 }
 
 function showToast(msg){
@@ -539,34 +598,18 @@ function docButton(label, url){
     </button>`;
 }
 
-function computeKPIs(){
-  const total = DATA1.length;
-  const uniquePartners = new Set(DATA1.map(r=>r.partner));
-  const signedPartners = new Set(DATA1.filter(r=>r.agreement_status==='Signed').map(r=>r.partner));
-  const negotiationPartners = new Set(DATA1.filter(r=>r.agreement_status==='In Negotiation').map(r=>r.partner));
-  const seRegCount = DATA1.filter(r=>r.se_reg_status==='Registered').length;
-  const qualifiedCount = DATA1.filter(r=>r.qualified==='Yes').length;
-  const expiringSoon = DATA1.filter(r=>!r.expired && r.remaining_days!==null && r.remaining_days<=180).length;
-  const expiredCount = DATA1.filter(r=>r.expired).length;
-  const rejectedCount = DATA1.filter(r=>r.comment && /reject/i.test(r.comment)).length;
-  const onHoldCount = DATA1.filter(r=>r.agreement_status==='On Hold').length;
-  const needsAttention = expiringSoon+expiredCount+rejectedCount+onHoldCount;
-
-  const cards = [
-    {num: total, label:'Tracked product lines', sub: uniquePartners.size+' unique companies', accent:'var(--cyan)'},
-    {num: signedPartners.size, label:'Companies signed', sub: negotiationPartners.size+' in negotiation', accent:'var(--green)'},
-    {num: seRegCount, label:'SE registered lines', sub: (total-seRegCount)+' pending', accent:'var(--cyan)'},
-    {num: qualifiedCount, label:'Qualified products', sub: 'of '+total+' tracked lines', accent:'var(--green)'},
-    {num: needsAttention, label:'Needs attention', sub: expiredCount+' expired · '+expiringSoon+' expiring · '+rejectedCount+' rejected · '+onHoldCount+' on hold', accent:'var(--red)'},
-  ];
-  document.getElementById('kpiStrip').innerHTML = cards.map(c=>`
-    <div class="kpi-card" style="--kpi-accent:${c.accent}">
-      <div class="kpi-num">${c.num}</div>
-      <div class="kpi-label">${c.label}</div>
-      <div class="kpi-sub">${c.sub}</div>
-    </div>`).join('');
+// ---------- page switching ----------
+function switchPage(p){
+  activePage = p;
+  document.getElementById('pageAg').style.display = p==='ag' ? '' : 'none';
+  document.getElementById('pagePq').style.display = p==='pq' ? '' : 'none';
+  document.getElementById('tabAgBtn').classList.toggle('active', p==='ag');
+  document.getElementById('tabPqBtn').classList.toggle('active', p==='pq');
 }
+document.getElementById('tabAgBtn').addEventListener('click', ()=>switchPage('ag'));
+document.getElementById('tabPqBtn').addEventListener('click', ()=>switchPage('pq'));
 
+// ---------- funnel ----------
 function renderFunnelSVG(containerId, stages){
   const n = stages.length;
   const w=1180,h=168, margin = n<=4?130:95, step=(w-margin*2)/(n-1), cy=66, r = n<=4?42:38;
@@ -587,22 +630,19 @@ function renderFunnelSVG(containerId, stages){
   svg += `</svg>`;
   document.getElementById(containerId).innerHTML = svg;
 }
-
-function renderCompanyFlow(){
-  const seen = new Map();
-  DATA1.forEach(r=>{ if(!seen.has(r.partner)) seen.set(r.partner, r.company_stage); });
-  const stages = seen.size ? Array.from(seen.values()) : [];
+function renderAgFlow(){
+  const stages = DATA_AG.map(r=>r.stage);
   const cum = n => stages.filter(s=>s!==null && s>=n).length;
-  renderFunnelSVG('flowSvgWrapCompany', [
+  renderFunnelSVG('flowSvgWrapAg', [
     {label:'Study', sub:'reached', count:cum(1), done:false},
     {label:'Initial agreement', sub:'reached', count:cum(2), done:false},
     {label:'Registration', sub:'reached', count:cum(3), done:false},
     {label:'Final agreement signing', sub:'complete', count:cum(4), done:true},
   ]);
 }
-function renderProductFlow(){
-  const cum = n => DATA1.filter(r=>r.product_stage!==null && r.product_stage>=n).length;
-  renderFunnelSVG('flowSvgWrapProduct', [
+function renderPqFlow(){
+  const cum = n => DATA_PQ.filter(r=>r.stage!==null && r.stage>=n).length;
+  renderFunnelSVG('flowSvgWrapPq', [
     {label:'Study', sub:'reached', count:cum(1), done:false},
     {label:'Compliance matrix', sub:'reached', count:cum(2), done:false},
     {label:'PQ stage', sub:'reached', count:cum(3), done:false},
@@ -612,230 +652,396 @@ function renderProductFlow(){
   ]);
 }
 
-
-function renderAlerts(){
-  const expired = DATA1.filter(r=>r.expired);
-  const soon = DATA1.filter(r=>!r.expired && r.remaining_days!==null && r.remaining_days<=180);
-  const rejections = DATA1.filter(r=>r.comment && /reject/i.test(r.comment));
-  const onHold = DATA1.filter(r=>r.agreement_status==='On Hold');
-  const {notifications} = computeDataQuality();
-  const all = [
-    ...expired.map(r=>({row:r, tag:'expired', label:'Expired', text:'Expired '+(r.agreement_end||'')})),
-    ...soon.map(r=>({row:r, tag:'soon', label:'Expiring soon', text: r.remaining_days+' days remaining'})),
-    ...rejections.map(r=>({row:r, tag:'reject', label:'Rejected', text: r.reason || 'See comment'})),
-    ...onHold.map(r=>({row:r, tag:'onhold', label:'On hold', text: r.reason || r.comment || 'Paused, no active movement'})),
-    ...notifications.map(n=>({row:n.row, tag:'notify', label:n.rule, text: n.message})),
+// ---------- KPIs ----------
+function computeKpisAg(){
+  const total = DATA_AG.length;
+  const signed = DATA_AG.filter(r=>r.agreement_status==='Signed').length;
+  const negotiation = DATA_AG.filter(r=>r.agreement_status==='In Negotiation').length;
+  const seReg = DATA_AG.filter(r=>r.se_reg_status==='Registered').length;
+  const ngReg = DATA_AG.filter(r=>r.ng_reg_status==='Registered').length;
+  const expiringSoon = DATA_AG.filter(r=>!r.expired && r.remaining_days!==null && r.remaining_days<=180).length;
+  const expiredCount = DATA_AG.filter(r=>r.expired).length;
+  const onHold = DATA_AG.filter(r=>r.agreement_status==='On Hold').length;
+  const needsAttention = expiringSoon+expiredCount+onHold;
+  const cards = [
+    {num: total, label:'Total agreements', sub: (new Set(DATA_AG.map(r=>r.partner))).size+' unique companies', accent:'var(--cyan)'},
+    {num: signed, label:'Signed', sub: negotiation+' in negotiation', accent:'var(--green)'},
+    {num: seReg, label:'SE registered', sub: (total-seReg)+' pending', accent:'var(--cyan)'},
+    {num: ngReg, label:'NG registered', sub: (total-ngReg)+' pending', accent:'var(--cyan)'},
+    {num: needsAttention, label:'Needs attention', sub: expiredCount+' expired · '+expiringSoon+' expiring · '+onHold+' on hold', accent:'var(--red)'},
   ];
-  if(all.length===0) return;
-  document.getElementById('alertsPanel').style.display = '';
-  document.getElementById('alertsGrid').innerHTML = all.map(a=>`
+  document.getElementById('kpiStripAg').innerHTML = cards.map(c=>`
+    <div class="kpi-card" style="--kpi-accent:${c.accent}"><div class="kpi-num">${c.num}</div><div class="kpi-label">${c.label}</div><div class="kpi-sub">${c.sub}</div></div>`).join('');
+}
+function computeKpisPq(){
+  const total = DATA_PQ.length;
+  const qualified = DATA_PQ.filter(r=>r.qualified==='Yes').length;
+  const listed = DATA_PQ.filter(r=>r.shortlisted==='Yes').length;
+  const comply = DATA_PQ.filter(r=>r.compliance_status==='Comply').length;
+  const rejected = DATA_PQ.filter(r=>r.comment && /reject/i.test(r.comment)).length;
+  const onHold = DATA_PQ.filter(r=>r.compliance_status==='On Hold').length;
+  const needsAttention = rejected+onHold;
+  const cards = [
+    {num: total, label:'Total products', sub: (new Set(DATA_PQ.map(r=>r.partner))).size+' unique companies', accent:'var(--cyan)'},
+    {num: comply, label:'Matrix complete', sub: 'of '+total+' tracked products', accent:'var(--cyan)'},
+    {num: qualified, label:'Qualified', sub: 'of '+total+' tracked products', accent:'var(--green)'},
+    {num: listed, label:'Listed in KSA', sub: 'final milestone reached', accent:'var(--green)'},
+    {num: needsAttention, label:'Needs attention', sub: rejected+' rejected · '+onHold+' on hold', accent:'var(--red)'},
+  ];
+  document.getElementById('kpiStripPq').innerHTML = cards.map(c=>`
+    <div class="kpi-card" style="--kpi-accent:${c.accent}"><div class="kpi-num">${c.num}</div><div class="kpi-label">${c.label}</div><div class="kpi-sub">${c.sub}</div></div>`).join('');
+}
+
+// ---------- notifications (cross-tab) ----------
+function computeNotifications(){
+  const agBySN = new Map(DATA_AG.map(r=>[r.sr, r]));
+  const notifications = [];
+  DATA_PQ.forEach(r=>{
+    if(r.qualified==='Yes' && (r.business_line==='National Grid (NG)' || r.business_line==='Both')){
+      const ag = agBySN.get(r.agreement_sn);
+      if(!ag || ag.ng_reg_status!=='Registered'){
+        notifications.push({rule:'Start NG registration', message:'Qualified in SE and listed under NG/Both, but NG registration has not started.', pqRow:r, agRow:ag||null});
+      }
+    }
+  });
+  return notifications;
+}
+
+// ---------- alerts ----------
+function renderAlertsAg(){
+  const expired = DATA_AG.filter(r=>r.expired);
+  const soon = DATA_AG.filter(r=>!r.expired && r.remaining_days!==null && r.remaining_days<=180);
+  const onHold = DATA_AG.filter(r=>r.agreement_status==='On Hold');
+  const notifications = computeNotifications();
+  const all = [
+    ...expired.map(r=>({row:r, page:'ag', tag:'expired', label:'Expired', text:'Expired '+(r.agreement_end||'')})),
+    ...soon.map(r=>({row:r, page:'ag', tag:'soon', label:'Expiring soon', text: r.remaining_days+' days remaining'})),
+    ...onHold.map(r=>({row:r, page:'ag', tag:'onhold', label:'On hold', text: r.condition || r.result || 'Paused, no active movement'})),
+    ...notifications.map(n=>({row:n.agRow||n.pqRow, page: n.agRow?'ag':'pq', tag:'notify', label:n.rule, text: n.message})),
+  ];
+  const panel = document.getElementById('alertsPanelAg');
+  if(all.length===0){ panel.style.display='none'; return; }
+  panel.style.display = '';
+  document.getElementById('alertsGridAg').innerHTML = all.map(a=>`
+    <div class="alert-card" data-row-id="${a.row.rowId}" data-page="${a.page}">
+      <span class="alert-tag ${a.tag}">${a.label}</span>
+      <div class="a-partner">${esc(a.row.partner)}</div>
+      <div class="a-detail">${esc(a.row.sr)}</div>
+      <div class="a-detail">${esc(a.text)}</div>
+    </div>`).join('');
+  $$('#alertsGridAg .alert-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      const page = card.getAttribute('data-page');
+      const rid = card.getAttribute('data-row-id');
+      const row = page==='ag' ? DATA_AG.find(r=>String(r.rowId)===rid) : DATA_PQ.find(r=>String(r.rowId)===rid);
+      if(row) openDrawer(row, page);
+    });
+  });
+}
+function renderAlertsPq(){
+  const rejections = DATA_PQ.filter(r=>r.comment && /reject/i.test(r.comment));
+  const onHold = DATA_PQ.filter(r=>r.compliance_status==='On Hold');
+  const all = [
+    ...rejections.map(r=>({row:r, tag:'reject', label:'Rejected', text: r.reason || 'See comment'})),
+    ...onHold.map(r=>({row:r, tag:'onhold', label:'On hold', text: r.reason || r.comment || 'Compliance paused'})),
+  ];
+  const panel = document.getElementById('alertsPanelPq');
+  if(all.length===0){ panel.style.display='none'; return; }
+  panel.style.display = '';
+  document.getElementById('alertsGridPq').innerHTML = all.map(a=>`
     <div class="alert-card" data-row-id="${a.row.rowId}">
       <span class="alert-tag ${a.tag}">${a.label}</span>
       <div class="a-partner">${esc(a.row.partner)}</div>
-      <div class="a-detail">${esc((a.row.product||'').split('\n')[0])}</div>
+      <div class="a-detail">${esc(a.row.sr)}</div>
       <div class="a-detail">${esc(a.text)}</div>
     </div>`).join('');
-  $$('.alert-card').forEach(card=>{
+  $$('#alertsGridPq .alert-card').forEach(card=>{
     card.addEventListener('click', ()=>{
-      const row = DATA1.find(r=>String(r.rowId)===card.getAttribute('data-row-id'));
-      if(row) openDrawer(row);
+      const row = DATA_PQ.find(r=>String(r.rowId)===card.getAttribute('data-row-id'));
+      if(row) openDrawer(row, 'pq');
     });
   });
 }
 
-function computeDataQuality(){
+// ---------- data quality ----------
+function computeDqAg(){
   const errors = [];
-  const notifications = [];
-  DATA1.forEach(r=>{
-    if(!r.responsible) errors.push({rule:'Responsible engineer', message:'Responsible Person is missing.', row:r});
+  DATA_AG.forEach(r=>{
     if(r.agreement_status==='In Negotiation' && !['Yes','No'].includes(r.legal_revision))
-      errors.push({rule:'Legal revision', message:'Status is In Negotiation but Legal Revision is not Yes/No.', row:r});
+      errors.push({rule:'Legal revision', message:'In Negotiation but Legal Revision is not Yes/No.', row:r});
     if(r.agreement_status==='Signed' && !r.agreement_start)
-      errors.push({rule:'Agreement start date', message:'Agreement is Signed but Start Date is missing.', row:r});
-    if(!r.need_pq)
-      errors.push({rule:'Need PQ?', message:'Need PQ? is not specified.', row:r});
-    if(r.need_pq==='Yes' && !r.se_standard)
-      errors.push({rule:'SE standard', message:'Need PQ is Yes but SE Standard is missing.', row:r});
+      errors.push({rule:'Start date', message:'Signed but Start Date is missing.', row:r});
     if(r.se_reg_status==='Registered' && !r.se_registered_date)
-      errors.push({rule:'SE registration date', message:'SE Registration Status is Registered but the date is missing.', row:r});
+      errors.push({rule:'SE reg. date', message:'SE Registration Status is Registered but the date is missing.', row:r});
     if(r.ng_reg_status==='Registered' && !r.ng_registered_date)
-      errors.push({rule:'NG registration date', message:'NG Registration Status is Registered but the date is missing.', row:r});
+      errors.push({rule:'NG reg. date', message:'NG Registration Status is Registered but the date is missing.', row:r});
+    if(!r.business_line)
+      errors.push({rule:'Business line', message:'Business Line is not specified.', row:r});
+  });
+  return errors;
+}
+function computeDqPq(){
+  const errors = [];
+  DATA_PQ.forEach(r=>{
     if(r.qualified==='Yes' && !r.qualified_date)
       errors.push({rule:'Qualified date', message:'Qualified is Yes but Qualified Date is missing.', row:r});
     if(!r.business_line)
       errors.push({rule:'Business line', message:'Business Line is not specified.', row:r});
-
-    if(r.qualified==='Yes' && (r.business_line==='National Grid (NG)' || r.business_line==='Both') && r.ng_reg_status!=='Registered'){
-      notifications.push({rule:'Start NG registration', message:'Qualified in SE and listed under NG/Both, but NG registration has not started.', row:r});
-    }
   });
-  return {errors, notifications};
+  return errors;
 }
-function renderDataQuality(){
-  const {errors} = computeDataQuality();
-  const bySN = (a,b) => {
-    const na = parseInt(a.row.sr), nb = parseInt(b.row.sr);
-    const va = isNaN(na) ? Infinity : na;
-    const vb = isNaN(nb) ? Infinity : nb;
-    return va - vb;
-  };
-  errors.sort(bySN);
-
-  document.getElementById('dqCount').textContent = errors.length+' data entry issue'+(errors.length!==1?'s':'');
-  const eList = document.getElementById('dqErrorsGrid');
-  eList.innerHTML = errors.length===0 ? '<div class="dq-empty">No data entry errors found.</div>' : errors.map(e=>`
+function renderDq(listId, countId, errors, page){
+  document.getElementById(countId).textContent = errors.length+' data entry issue'+(errors.length!==1?'s':'');
+  const el = document.getElementById(listId);
+  el.innerHTML = errors.length===0 ? '<div class="dq-empty">No data entry errors found.</div>' : errors.map(e=>`
     <div class="dq-item dq-error" data-row-id="${e.row.rowId}">
-      <span class="dq-sn">SN ${esc(e.row.sr)}</span>
+      <span class="dq-sn">${esc(e.row.sr)}</span>
       <span class="dq-item-partner">${esc(e.row.partner)}</span>
       <span class="dq-tag">${esc(e.rule)}</span>
       <span class="dq-item-msg">${esc(e.message)}</span>
     </div>`).join('');
-  $$('.dq-item').forEach(item=>{
+  $$('#'+listId+' .dq-item').forEach(item=>{
     item.addEventListener('click', ()=>{
-      const row = DATA1.find(r=>String(r.rowId)===item.getAttribute('data-row-id'));
-      if(row) openDrawer(row);
+      const row = (page==='ag'?DATA_AG:DATA_PQ).find(r=>String(r.rowId)===item.getAttribute('data-row-id'));
+      if(row) openDrawer(row, page);
     });
   });
 }
 
-let currentSort = {key:null, dir:1};
-function uniqueVals(field){ return Array.from(new Set(DATA1.map(r=>r[field]).filter(Boolean))).sort(); }
-function populateFilters(){
-  const stSel = document.getElementById('filterStage');
-  [1,2,3,4,5,6].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=PRODUCT_STAGE_LABELS[n]; stSel.appendChild(o); });
-  const blSel = document.getElementById('filterBusinessLine');
-  uniqueVals('business_line').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; blSel.appendChild(o); });
-  const agSel = document.getElementById('filterAgreement');
-  uniqueVals('agreement_status').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; agSel.appendChild(o); });
-  const atSel = document.getElementById('filterAgentType');
-  uniqueVals('agent_type').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; atSel.appendChild(o); });
+// ---------- filters/table: Agreements ----------
+let sortAg = {key:null, dir:1};
+function uniqueVals(arr, field){ return Array.from(new Set(arr.map(r=>r[field]).filter(Boolean))).sort(); }
+function populateFiltersAg(){
+  const stSel = document.getElementById('filterStageAg');
+  [1,2,3,4].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=AG_STAGE_LABELS[n]; stSel.appendChild(o); });
+  uniqueVals(DATA_AG,'business_line').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; document.getElementById('filterBLAg').appendChild(o); });
+  uniqueVals(DATA_AG,'agreement_status').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; document.getElementById('filterStatusAg').appendChild(o); });
 }
-function getFiltered(){
-  const q = document.getElementById('searchInput').value.trim().toLowerCase();
-  const st = document.getElementById('filterStage').value;
-  const bl = document.getElementById('filterBusinessLine').value;
-  const ag = document.getElementById('filterAgreement').value;
-  const at = document.getElementById('filterAgentType').value;
-  let rows = DATA1.filter(r=>{
-    if(q){ const hay=[r.partner,r.product,r.se_standard,r.responsible].join(' ').toLowerCase(); if(!hay.includes(q)) return false; }
-    if(st && String(r.product_stage)!==st) return false;
+function getFilteredAg(){
+  const q = document.getElementById('searchAg').value.trim().toLowerCase();
+  const st = document.getElementById('filterStageAg').value;
+  const bl = document.getElementById('filterBLAg').value;
+  const status = document.getElementById('filterStatusAg').value;
+  let rows = DATA_AG.filter(r=>{
+    if(q){ const hay=[r.sr,r.partner,r.products,r.se_standard].join(' ').toLowerCase(); if(!hay.includes(q)) return false; }
+    if(st && String(r.stage)!==st) return false;
     if(bl && r.business_line!==bl) return false;
-    if(ag && r.agreement_status!==ag) return false;
-    if(at && r.agent_type!==at) return false;
+    if(status && r.agreement_status!==status) return false;
     return true;
   });
-  if(currentSort.key){
+  if(sortAg.key){
     rows = rows.slice().sort((a,b)=>{
-      let va=a[currentSort.key], vb=b[currentSort.key];
-      if(va===null||va===undefined) va='';
-      if(vb===null||vb===undefined) vb='';
-      if(typeof va==='number' && typeof vb==='number') return (va-vb)*currentSort.dir;
-      return String(va).localeCompare(String(vb))*currentSort.dir;
+      let va=a[sortAg.key], vb=b[sortAg.key];
+      if(va===null||va===undefined) va=''; if(vb===null||vb===undefined) vb='';
+      if(typeof va==='number' && typeof vb==='number') return (va-vb)*sortAg.dir;
+      return String(va).localeCompare(String(vb))*sortAg.dir;
     });
   }
   return rows;
 }
-function renderTable(){
-  const rows = getFiltered();
-  document.getElementById('registerCount').textContent = rows.length+' of '+DATA1.length+' records';
-  const tbody = document.getElementById('tableBody');
-  const empty = document.getElementById('emptyState');
+function renderTableAg(){
+  const rows = getFilteredAg();
+  document.getElementById('registerCountAg').textContent = rows.length+' of '+DATA_AG.length+' records';
+  const tbody = document.getElementById('bodyAg');
+  const empty = document.getElementById('emptyAg');
   if(rows.length===0){ tbody.innerHTML=''; empty.style.display=''; return; }
   empty.style.display='none';
   tbody.innerHTML = rows.map(r=>`
     <tr data-row-id="${r.rowId}">
-      <td><div class="cell-partner">${esc(r.partner)}</div><div class="cell-sub">${esc(r.responsible||'')}</div></td>
-      <td><div>${esc((r.product||'').split('\n')[0])}</div><div class="cell-sub">${esc(r.se_standard||'')}</div></td>
+      <td><span class="sn-code">${esc(r.sr)}</span></td>
+      <td class="cell-partner">${esc(r.partner)}</td>
+      <td><div class="cell-sub" style="white-space:pre-line;">${esc((r.products||'').slice(0,60))}</div></td>
       <td>${esc(r.business_line||'—')}</td>
-      <td>${productStageBadge(r.product_stage, r.compliance_status)}</td>
+      <td>${agStageBadge(r.stage, r.agreement_status)}</td>
       <td>${agreementBadge(r.agreement_status)}</td>
-      <td>${agentBadge(r.agent_type)}</td>
       <td>${expiryBadge(r)}</td>
       <td>${regStatusBadge(r.se_reg_status)}</td>
-      <td>${yesNoBadge(r.qualified)}</td>
+      <td>${regStatusBadge(r.ng_reg_status)}</td>
     </tr>`).join('');
-  $$('#tableBody tr').forEach(tr=>{
+  $$('#bodyAg tr').forEach(tr=>{
     tr.addEventListener('click', ()=>{
-      const row = DATA1.find(r=>String(r.rowId)===tr.getAttribute('data-row-id'));
-      if(row) openDrawer(row);
+      const row = DATA_AG.find(r=>String(r.rowId)===tr.getAttribute('data-row-id'));
+      if(row) openDrawer(row, 'ag');
     });
   });
 }
-$$('#mainTable thead th').forEach(th=>{
+$$('#tableAg thead th').forEach(th=>{
   th.addEventListener('click', ()=>{
     const key = th.getAttribute('data-sort');
-    if(currentSort.key===key) currentSort.dir *= -1; else { currentSort.key=key; currentSort.dir=1; }
-    renderTable();
+    if(sortAg.key===key) sortAg.dir *= -1; else { sortAg.key=key; sortAg.dir=1; }
+    renderTableAg();
   });
 });
-document.getElementById('searchInput').addEventListener('input', renderTable);
-['filterStage','filterBusinessLine','filterAgreement','filterAgentType'].forEach(id=>{
-  document.getElementById(id).addEventListener('change', renderTable);
-});
-document.getElementById('resetFilters').addEventListener('click', ()=>{
-  document.getElementById('searchInput').value='';
-  ['filterStage','filterBusinessLine','filterAgreement','filterAgentType'].forEach(id=>document.getElementById(id).value='');
-  currentSort = {key:null, dir:1};
-  renderTable();
+document.getElementById('searchAg').addEventListener('input', renderTableAg);
+['filterStageAg','filterBLAg','filterStatusAg'].forEach(id=>document.getElementById(id).addEventListener('change', renderTableAg));
+document.getElementById('resetAg').addEventListener('click', ()=>{
+  document.getElementById('searchAg').value='';
+  ['filterStageAg','filterBLAg','filterStatusAg'].forEach(id=>document.getElementById(id).value='');
+  sortAg = {key:null, dir:1}; renderTableAg();
 });
 
+// ---------- filters/table: PQ ----------
+let sortPq = {key:null, dir:1};
+function populateFiltersPq(){
+  const stSel = document.getElementById('filterStagePq');
+  [1,2,3,4,5,6].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=PQ_STAGE_LABELS[n]; stSel.appendChild(o); });
+  uniqueVals(DATA_PQ,'business_line').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; document.getElementById('filterBLPq').appendChild(o); });
+  uniqueVals(DATA_PQ,'compliance_status').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; document.getElementById('filterCompliancePq').appendChild(o); });
+}
+function getFilteredPq(){
+  const q = document.getElementById('searchPq').value.trim().toLowerCase();
+  const st = document.getElementById('filterStagePq').value;
+  const bl = document.getElementById('filterBLPq').value;
+  const comp = document.getElementById('filterCompliancePq').value;
+  let rows = DATA_PQ.filter(r=>{
+    if(q){ const hay=[r.sr,r.partner,r.product,r.agreement_sn].join(' ').toLowerCase(); if(!hay.includes(q)) return false; }
+    if(st && String(r.stage)!==st) return false;
+    if(bl && r.business_line!==bl) return false;
+    if(comp && r.compliance_status!==comp) return false;
+    return true;
+  });
+  if(sortPq.key){
+    rows = rows.slice().sort((a,b)=>{
+      let va=a[sortPq.key], vb=b[sortPq.key];
+      if(va===null||va===undefined) va=''; if(vb===null||vb===undefined) vb='';
+      if(typeof va==='number' && typeof vb==='number') return (va-vb)*sortPq.dir;
+      return String(va).localeCompare(String(vb))*sortPq.dir;
+    });
+  }
+  return rows;
+}
+function renderTablePq(){
+  const rows = getFilteredPq();
+  document.getElementById('registerCountPq').textContent = rows.length+' of '+DATA_PQ.length+' records';
+  const tbody = document.getElementById('bodyPq');
+  const empty = document.getElementById('emptyPq');
+  if(rows.length===0){ tbody.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display='none';
+  tbody.innerHTML = rows.map(r=>`
+    <tr data-row-id="${r.rowId}">
+      <td><span class="sn-code">${esc(r.sr)}</span></td>
+      <td class="cell-partner">${esc(r.partner)}</td>
+      <td>${esc(r.product||'—')}</td>
+      <td><span class="sn-code sn-link" data-agsn="${esc(r.agreement_sn)}">${esc(r.agreement_sn||'—')}</span></td>
+      <td>${esc(r.business_line||'—')}</td>
+      <td>${pqStageBadge(r.stage, r.compliance_status)}</td>
+      <td>${esc(r.compliance_status||'—')}</td>
+      <td>${yesNoBadge(r.qualified)}</td>
+    </tr>`).join('');
+  $$('#bodyPq tr').forEach(tr=>{
+    tr.addEventListener('click', (e)=>{
+      if(e.target.closest('.sn-link')) return;
+      const row = DATA_PQ.find(r=>String(r.rowId)===tr.getAttribute('data-row-id'));
+      if(row) openDrawer(row, 'pq');
+    });
+  });
+  $$('#bodyPq .sn-link').forEach(link=>{
+    link.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      openAgreementBySN(link.getAttribute('data-agsn'));
+    });
+  });
+}
+$$('#tablePq thead th').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.getAttribute('data-sort');
+    if(sortPq.key===key) sortPq.dir *= -1; else { sortPq.key=key; sortPq.dir=1; }
+    renderTablePq();
+  });
+});
+document.getElementById('searchPq').addEventListener('input', renderTablePq);
+['filterStagePq','filterBLPq','filterCompliancePq'].forEach(id=>document.getElementById(id).addEventListener('change', renderTablePq));
+document.getElementById('resetPq').addEventListener('click', ()=>{
+  document.getElementById('searchPq').value='';
+  ['filterStagePq','filterBLPq','filterCompliancePq'].forEach(id=>document.getElementById(id).value='');
+  sortPq = {key:null, dir:1}; renderTablePq();
+});
+
+function openAgreementBySN(sn){
+  const row = DATA_AG.find(r=>r.sr===sn);
+  if(row){ switchPage('ag'); openDrawer(row, 'ag'); }
+  else showToast('Agreement '+sn+' not found');
+}
+
+// ---------- drawer ----------
 const drawer = document.getElementById('drawer');
 const overlay = document.getElementById('drawerOverlay');
-function openDrawer(r){
+function openDrawer(r, page){
   document.getElementById('drawerTitle').textContent = r.partner;
-  document.getElementById('drawerEyebrow').textContent = 'RECORD #'+r.sr+(r.business_line?' · '+r.business_line:'');
-  document.getElementById('drawerBody').innerHTML = `
-    <div class="d-section">
-      <div class="d-section-title">Company (registration &amp; agreement)</div>
-      <div class="d-row"><span class="d-k">Company stage</span><span class="d-v">${companyStageBadge(r.company_stage, r.agreement_status)}</span></div>
-      <div class="d-row"><span class="d-k">Agreement status</span><span class="d-v">${agreementBadge(r.agreement_status)}</span></div>
-      <div class="d-row"><span class="d-k">Legal revision</span><span class="d-v">${esc(r.legal_revision||'—')}</span></div>
-      <div class="d-row"><span class="d-k">Exclusivity signal</span><span class="d-v">${agentBadge(r.agent_type)}</span></div>
-      <div class="d-row"><span class="d-k">Start date</span><span class="d-v">${esc(r.agreement_start||'—')}</span></div>
-      <div class="d-row"><span class="d-k">End date</span><span class="d-v">${esc(r.agreement_end||'—')}</span></div>
-      <div class="d-row"><span class="d-k">Remaining</span><span class="d-v">${expiryBadge(r)}</span></div>
-      <div class="d-row"><span class="d-k">SE registration</span><span class="d-v">${regStatusBadge(r.se_reg_status)}</span></div>
-      <div class="d-row"><span class="d-k">SE reg. date</span><span class="d-v">${esc(r.se_registered_date||'—')}</span></div>
-      <div class="d-row"><span class="d-k">NG registration</span><span class="d-v">${regStatusBadge(r.ng_reg_status)}</span></div>
-      <div class="d-row"><span class="d-k">NG reg. date</span><span class="d-v">${esc(r.ng_registered_date||'—')}</span></div>
-      <div class="d-row"><span class="d-k">Commercial reg.</span><span class="d-v">${esc(r.commercial_registration||'—')}</span></div>
-      <div class="d-row"><span class="d-k">Responsible</span><span class="d-v">${esc(r.responsible||'—')}</span></div>
-    </div>
-
-    <div class="d-section">
-      <div class="d-section-title">Product &amp; prequalification</div>
-      <div class="d-row"><span class="d-k">Product stage</span><span class="d-v">${productStageBadge(r.product_stage, r.compliance_status)}</span></div>
-      <div class="d-row"><span class="d-k">Product</span><span class="d-v">${esc(r.product||'—')}</span></div>
-      <div class="d-row"><span class="d-k">Agreement scope</span><span class="d-v">${esc(r.agreement_product||'—')}</span></div>
-      <div class="d-row"><span class="d-k">SE standard</span><span class="d-v">${esc(r.se_standard||'—')}</span></div>
-      <div class="d-row"><span class="d-k">SE product class</span><span class="d-v">${esc(r.se_product||'—')}</span></div>
-      <div class="d-row"><span class="d-k">Needs PQ?</span><span class="d-v">${yesNoBadge(r.need_pq)}</span></div>
-      <div class="d-row"><span class="d-k">Compliance status</span><span class="d-v">${esc(r.compliance_status||'—')}</span></div>
-      <div class="d-row"><span class="d-k">PQ submitted</span><span class="d-v">${esc(r.pq_submit_date||'—')}</span></div>
-      <div class="d-row"><span class="d-k">Last vendor reply</span><span class="d-v">${esc(r.last_vendor_reply||'—')}</span></div>
-      <div class="d-row"><span class="d-k">Last SE comment</span><span class="d-v">${esc(r.last_comment_se_date||'—')}</span></div>
-    </div>
-
-    <div class="d-section">
-      <div class="d-section-title">Qualification &amp; listing</div>
-      <div class="d-row"><span class="d-k">Qualified</span><span class="d-v">${yesNoBadge(r.qualified)}</span></div>
-      <div class="d-row"><span class="d-k">Qualified date</span><span class="d-v">${esc(r.qualified_date||'—')}</span></div>
-      <div class="d-row"><span class="d-k">Factory visit</span><span class="d-v">${yesNoBadge(r.waiting_visit_status)}</span></div>
-      <div class="d-row"><span class="d-k">Visit/sample date</span><span class="d-v">${esc(r.visit_date||'—')}</span></div>
-      <div class="d-row"><span class="d-k">Listed in KSA</span><span class="d-v">${yesNoBadge(r.shortlisted)}</span></div>
-      <div class="d-row"><span class="d-k">Vendor number</span><span class="d-v">${esc(r.vendor_number||'—')}</span></div>
-    </div>
-
-    ${r.condition ? `<div class="d-section"><div class="d-section-title">Condition / obligation</div><div class="d-text">${esc(r.condition)}</div></div>` : ''}
-    ${r.result ? `<div class="d-section"><div class="d-section-title">Result if achieved</div><div class="d-text">${esc(r.result)}</div></div>` : ''}
-    ${r.comment ? `<div class="d-section"><div class="d-section-title">Comment</div><div class="d-text">${esc(r.comment)}</div></div>` : ''}
-    ${r.reason ? `<div class="d-section"><div class="d-section-title">Reason</div><div class="d-text">${esc(r.reason)}</div></div>` : ''}
-
-    <div class="d-section">
-      <div class="d-section-title">Documents</div>
-      <div class="doc-btn-col">${docButton('Agreement', r.doc_agreement)}${docButton('Compliance matrix', r.doc_matrix)}${docButton('Product brochure', r.doc_brochure)}</div>
-    </div>
-  `;
+  document.getElementById('drawerEyebrow').textContent = r.sr + (r.business_line?' · '+r.business_line:'');
+  let body = '';
+  if(page==='ag'){
+    const linkedPQs = DATA_PQ.filter(p=>p.agreement_sn===r.sr);
+    body = `
+      <div class="d-section">
+        <div class="d-section-title">Agreement</div>
+        <div class="d-row"><span class="d-k">Stage</span><span class="d-v">${agStageBadge(r.stage, r.agreement_status)}</span></div>
+        <div class="d-row"><span class="d-k">Status</span><span class="d-v">${agreementBadge(r.agreement_status)}</span></div>
+        <div class="d-row"><span class="d-k">Legal revision</span><span class="d-v">${esc(r.legal_revision||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Agreement type</span><span class="d-v">${esc(r.agreement_type||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Start date</span><span class="d-v">${esc(r.agreement_start||'—')}</span></div>
+        <div class="d-row"><span class="d-k">End date</span><span class="d-v">${esc(r.agreement_end||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Remaining</span><span class="d-v">${expiryBadge(r)}</span></div>
+      </div>
+      <div class="d-section">
+        <div class="d-section-title">Registration</div>
+        <div class="d-row"><span class="d-k">SE status</span><span class="d-v">${regStatusBadge(r.se_reg_status)}</span></div>
+        <div class="d-row"><span class="d-k">SE date</span><span class="d-v">${esc(r.se_registered_date||'—')}</span></div>
+        <div class="d-row"><span class="d-k">NG status</span><span class="d-v">${regStatusBadge(r.ng_reg_status)}</span></div>
+        <div class="d-row"><span class="d-k">NG date</span><span class="d-v">${esc(r.ng_registered_date||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Commercial reg.</span><span class="d-v">${esc(r.commercial_registration||'—')}</span></div>
+        <div class="d-row"><span class="d-k">SE standard</span><span class="d-v">${esc(r.se_standard||'—')}</span></div>
+      </div>
+      <div class="d-section">
+        <div class="d-section-title">Products in this agreement</div>
+        <div class="d-text">${esc(r.products||'—')}</div>
+        ${linkedPQs.length ? `<div class="doc-btn-col" style="margin-top:10px;">${linkedPQs.map(p=>`<span class="doc-btn doc-btn-empty sn-link" data-agsn-view="${esc(p.sr)}" style="cursor:pointer;">${esc(p.sr)} — ${esc(p.product)}</span>`).join('')}</div>` : ''}
+      </div>
+      ${r.condition ? `<div class="d-section"><div class="d-section-title">Condition</div><div class="d-text">${esc(r.condition)}</div></div>` : ''}
+      ${r.result ? `<div class="d-section"><div class="d-section-title">Result if achieved</div><div class="d-text">${esc(r.result)}</div></div>` : ''}
+      <div class="d-section">
+        <div class="d-section-title">Documents</div>
+        <div class="doc-btn-col">${docButton('Agreement', r.doc_agreement)}</div>
+      </div>
+    `;
+  } else {
+    body = `
+      <div class="d-section">
+        <div class="d-section-title">Product</div>
+        <div class="d-row"><span class="d-k">Stage</span><span class="d-v">${pqStageBadge(r.stage, r.compliance_status)}</span></div>
+        <div class="d-row"><span class="d-k">Product</span><span class="d-v">${esc(r.product||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Agreement</span><span class="d-v"><span class="sn-code sn-link" id="drawerAgLink">${esc(r.agreement_sn||'—')}</span></span></div>
+        <div class="d-row"><span class="d-k">Compliance status</span><span class="d-v">${esc(r.compliance_status||'—')}</span></div>
+        <div class="d-row"><span class="d-k">PQ submitted</span><span class="d-v">${esc(r.pq_submit_date||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Last vendor reply</span><span class="d-v">${esc(r.last_vendor_reply||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Last SE comment</span><span class="d-v">${esc(r.last_comment_se_date||'—')}</span></div>
+      </div>
+      <div class="d-section">
+        <div class="d-section-title">Qualification &amp; listing</div>
+        <div class="d-row"><span class="d-k">Qualified</span><span class="d-v">${yesNoBadge(r.qualified)}</span></div>
+        <div class="d-row"><span class="d-k">Qualified date</span><span class="d-v">${esc(r.qualified_date||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Factory visit</span><span class="d-v">${yesNoBadge(r.waiting_visit_status)}</span></div>
+        <div class="d-row"><span class="d-k">Visit date</span><span class="d-v">${esc(r.visit_date||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Listed in KSA</span><span class="d-v">${yesNoBadge(r.shortlisted)}</span></div>
+        <div class="d-row"><span class="d-k">Vendor number</span><span class="d-v">${esc(r.vendor_number||'—')}</span></div>
+      </div>
+      ${r.comment ? `<div class="d-section"><div class="d-section-title">Comment</div><div class="d-text">${esc(r.comment)}</div></div>` : ''}
+      ${r.reason ? `<div class="d-section"><div class="d-section-title">Reason</div><div class="d-text">${esc(r.reason)}</div></div>` : ''}
+      <div class="d-section">
+        <div class="d-section-title">Documents</div>
+        <div class="doc-btn-col">${docButton('Compliance matrix', r.doc_matrix)}${docButton('Brochure', r.doc_brochure)}${docButton('Agreement', r.doc_agreement)}</div>
+      </div>
+    `;
+  }
+  document.getElementById('drawerBody').innerHTML = body;
+  const agLink = document.getElementById('drawerAgLink');
+  if(agLink) agLink.addEventListener('click', ()=>{ closeDrawer(); setTimeout(()=>openAgreementBySN(r.agreement_sn), 260); });
+  $$('.sn-link[data-agsn-view]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const pq = DATA_PQ.find(p=>p.sr===el.getAttribute('data-agsn-view'));
+      if(pq){ closeDrawer(); setTimeout(()=>{ switchPage('pq'); openDrawer(pq,'pq'); }, 260); }
+    });
+  });
   drawer.classList.add('open'); overlay.classList.add('open');
 }
 function closeDrawer(){ drawer.classList.remove('open'); overlay.classList.remove('open'); }
@@ -852,10 +1058,15 @@ async function loadData(){
   document.getElementById('mainContent').style.display = 'none';
   document.getElementById('lastUpdated').textContent = 'Loading…';
   try{
-    const raw = await fetchCSV(REGISTER_CSV_URL);
-    DATA1 = raw.filter(r=>{ const g = makeGetter(r); return g('Partner'); }).map(mapRow);
+    const [agRaw, pqRaw] = await Promise.all([fetchCSV(AGREEMENTS_CSV_URL), fetchCSV(PQ_CSV_URL)]);
+    DATA_AG = agRaw.filter(r=>{ const g=makeGetter(r); return g('Partner'); }).map(mapAgRow);
+    DATA_PQ = pqRaw.filter(r=>{ const g=makeGetter(r); return g('Partner'); }).map(mapPqRow);
 
-    computeKPIs(); renderCompanyFlow(); renderProductFlow(); renderAlerts(); populateFilters(); renderTable(); renderDataQuality();
+    computeKpisAg(); renderAgFlow(); renderAlertsAg(); populateFiltersAg(); renderTableAg();
+    renderDq('dqListAg','dqCountAg', computeDqAg(), 'ag');
+
+    computeKpisPq(); renderPqFlow(); renderAlertsPq(); populateFiltersPq(); renderTablePq();
+    renderDq('dqListPq','dqCountPq', computeDqPq(), 'pq');
 
     document.getElementById('loadingBanner').style.display = 'none';
     document.getElementById('mainContent').style.display = '';
@@ -865,9 +1076,9 @@ async function loadData(){
     const box = document.getElementById('errorBanner');
     box.style.display = 'block';
     if(err.message === 'CONFIG_MISSING'){
-      box.innerHTML = `<h3>Not connected yet</h3><p>Paste your published Google Sheet CSV link into <code>REGISTER_CSV_URL</code> near the top of this file's code.</p>`;
+      box.innerHTML = `<h3>Not connected yet</h3><p>Paste both published Google Sheet CSV links near the top of this file's code — one for the Agreements tab, one for the PQ tab.</p>`;
     } else {
-      box.innerHTML = `<h3>Could not load the sheet</h3><p>Check the sheet is still published to the web as CSV. Error detail: <code>${esc(err.message||String(err))}</code></p>`;
+      box.innerHTML = `<h3>Could not load the sheet</h3><p>Check that both tabs are still published to the web as CSV. Error detail: <code>${esc(err.message||String(err))}</code></p>`;
     }
     document.getElementById('lastUpdated').textContent = 'Not connected';
   }
