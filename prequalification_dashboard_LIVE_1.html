@@ -209,6 +209,7 @@ tbody tr:last-child td{border-bottom:none;}
 .engineer-card .e-num{font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--green);}
 .engineer-card .e-of{font-family:var(--font-mono); font-size:12px; color:var(--text-muted);}
 .engineer-card .e-gap{font-size:11px; color:var(--text-dim); margin-left:auto; font-family:var(--font-mono);}
+.engineer-card .e-note{font-size:10.5px; color:var(--amber); margin-bottom:10px; line-height:1.4; font-family:var(--font-mono);}
 .engineer-chart-wrap{position:relative; height:140px;}
 
 @media (max-width:900px){
@@ -238,7 +239,7 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v17 · 29 Aug 2026, 13:16</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v19 · 29 Aug 2026, 13:27</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -1070,10 +1071,18 @@ function renderTargets(){
   const engineers = Array.from(new Set(DATA_PQ.map(r=>r.responsible).filter(Boolean))).sort();
   const anyQualifiedDate = DATA_PQ.some(r=>r.qualified==='Yes' && parseSheetDate(r.qualified_date));
   const anyQualifiedAtAll = DATA_PQ.some(r=>r.qualified==='Yes');
+  const unassignedQualifiedCount = DATA_PQ.filter(r=>r.qualified==='Yes' && !r.responsible).length;
   const warning = document.getElementById('tgDataWarning');
+  const warnMsgs = [];
+  if(unassignedQualifiedCount>0){
+    warnMsgs.push(unassignedQualifiedCount+' qualified product'+(unassignedQualifiedCount!==1?'s have':' has')+' no Responsible Person assigned, so '+(unassignedQualifiedCount!==1?'they don\'t':'it doesn\'t')+' count toward anyone\'s target below — assign an engineer on the PQ tab to fix this.');
+  }
   if(anyQualifiedAtAll && !anyQualifiedDate){
+    warnMsgs.push('The totals (X of 10) are accurate regardless. But no qualified product has a Qualified Date yet, so none can be placed on the month-by-month charts — those will stay flat until Qualified Date is filled in.');
+  }
+  if(warnMsgs.length){
     warning.style.display = 'flex';
-    warning.querySelector('span').textContent = 'Every currently-qualified product is missing a Qualified Date, so this chart can\'t place any of them on the timeline yet. Fill in Qualified Date for qualified rows to see real progress here — see Data Quality on the PQ tab.';
+    warning.querySelector('span').textContent = warnMsgs.join(' ');
   } else {
     warning.style.display = 'none';
   }
@@ -1087,14 +1096,28 @@ function renderTargets(){
       <div class="e-progress">
         <span class="e-num" id="eNum${idx}">0</span><span class="e-of">of ${TARGET} this year</span>
       </div>
+      <div class="e-note" id="eNote${idx}" style="display:none;"></div>
       <div class="engineer-chart-wrap"><canvas id="eChart${idx}"></canvas></div>
     </div>`).join('');
 
   engineers.forEach((eng, idx)=>{
-    const dates = DATA_PQ.filter(r=>r.responsible===eng && r.qualified==='Yes').map(r=>parseSheetDate(r.qualified_date));
+    const qualifiedRows = DATA_PQ.filter(r=>r.responsible===eng && r.qualified==='Yes');
+    const realTotal = qualifiedRows.length;
+    const datedRows = qualifiedRows.filter(r=>{
+      const d = parseSheetDate(r.qualified_date);
+      return d && d.getFullYear()===year;
+    });
+    const undatedCount = realTotal - datedRows.length;
+    const dates = qualifiedRows.map(r=>parseSheetDate(r.qualified_date));
     const cum = cumulativeMonthlyCounts(dates, year);
-    const total = cum[cum.length-1];
-    document.getElementById('eNum'+idx).textContent = total;
+
+    document.getElementById('eNum'+idx).textContent = realTotal;
+    const noteEl = document.getElementById('eNote'+idx);
+    if(noteEl){
+      noteEl.textContent = undatedCount>0 ? undatedCount+' qualified but missing a date, so not placed on the chart below' : '';
+      noteEl.style.display = undatedCount>0 ? '' : 'none';
+    }
+
     const chart = new Chart(document.getElementById('eChart'+idx), {
       type:'bar',
       data:{
