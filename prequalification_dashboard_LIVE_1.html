@@ -202,7 +202,7 @@ tbody tr:last-child td{border-bottom:none;}
 }
 .tg-warning svg{flex-shrink:0;}
 
-.engineer-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:16px;}
+.engineer-grid{display:flex; flex-direction:column; gap:16px;}
 .engineer-card{background:var(--bg-panel-raised); border:1px solid var(--line); border-radius:12px; padding:16px;}
 .engineer-card .e-name{font-family:var(--font-display); font-weight:600; font-size:14.5px;}
 .engineer-card .e-progress{display:flex; align-items:baseline; gap:6px; margin:6px 0 12px;}
@@ -210,7 +210,7 @@ tbody tr:last-child td{border-bottom:none;}
 .engineer-card .e-of{font-family:var(--font-mono); font-size:12px; color:var(--text-muted);}
 .engineer-card .e-gap{font-size:11px; color:var(--text-dim); margin-left:auto; font-family:var(--font-mono);}
 .engineer-card .e-note{font-size:10.5px; color:var(--amber); margin-bottom:10px; line-height:1.4; font-family:var(--font-mono);}
-.engineer-chart-wrap{position:relative; height:140px;}
+.engineer-chart-wrap{position:relative; height:220px;}
 
 @media (max-width:900px){
   .kpi-strip{grid-template-columns:repeat(2,1fr);}
@@ -239,7 +239,7 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v19 · 29 Aug 2026, 13:27</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v20 · 29 Aug 2026, 14:47</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -1023,6 +1023,8 @@ document.getElementById('resetPq').addEventListener('click', ()=>{
 
 // ---------- targets ----------
 const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const WEEKS_IN_YEAR = 52;
+const WEEK_LABELS = Array.from({length:WEEKS_IN_YEAR}, (_,i)=>'W'+(i+1));
 let chartCompanyInstance = null;
 let engineerChartInstances = [];
 
@@ -1036,6 +1038,31 @@ function cumulativeMonthlyCounts(dates, year){
   monthly.forEach(m=>{ running += m; cumulative.push(running); });
   return cumulative;
 }
+function weekOfYear(date, year){
+  const start = new Date(year,0,1);
+  const diffDays = Math.floor((date - start)/86400000);
+  return Math.min(WEEKS_IN_YEAR-1, Math.max(0, Math.floor(diffDays/7)));
+}
+function cumulativeWeeklyCounts(dates, year){
+  const weekly = new Array(WEEKS_IN_YEAR).fill(0);
+  dates.forEach(d=>{
+    if(d && d.getFullYear()===year) weekly[weekOfYear(d, year)]++;
+  });
+  const cumulative = [];
+  let running = 0;
+  weekly.forEach(w=>{ running += w; cumulative.push(running); });
+  return cumulative;
+}
+// Truncates labels/data arrays so the chart never draws past "now" — no flat line into future months/weeks.
+function truncateToNow(labels, data, targetArr, year, period){
+  const now = new Date();
+  let cutoff;
+  if(now.getFullYear() > year) cutoff = labels.length - 1;       // a fully past year: show it all
+  else if(now.getFullYear() < year) cutoff = -1;                  // a future year: nothing to show yet
+  else cutoff = period==='week' ? weekOfYear(now, year) : now.getMonth();
+  const end = Math.max(0, Math.min(labels.length, cutoff+1));
+  return { labels: labels.slice(0,end), data: data.slice(0,end), target: targetArr.slice(0,end) };
+}
 
 function renderTargets(){
   const year = new Date().getFullYear();
@@ -1045,6 +1072,8 @@ function renderTargets(){
   const signedDates = DATA_AG.filter(r=>r.agreement_status==='Signed').map(r=>parseSheetDate(r.agreement_start));
   const companyCum = cumulativeMonthlyCounts(signedDates, year);
   const companyTotal = companyCum[companyCum.length-1];
+  const companyTarget = new Array(12).fill(TARGET);
+  const companyView = truncateToNow(MONTH_LABELS, companyCum, companyTarget, year, 'month');
 
   document.getElementById('tgCompanyHeadline').innerHTML = `
     <span class="t-num">${companyTotal}</span><span class="t-of">of ${TARGET} agreements signed in ${year}</span>
@@ -1054,15 +1083,15 @@ function renderTargets(){
   chartCompanyInstance = new Chart(document.getElementById('chartCompany'), {
     type: 'line',
     data: {
-      labels: MONTH_LABELS,
+      labels: companyView.labels,
       datasets: [
-        { label: 'Signed agreements (cumulative)', data: companyCum, borderColor:'#1E88C7', backgroundColor:'rgba(30,136,199,0.1)', fill:true, tension:0.25, pointRadius:3 },
-        { label: 'Annual target', data: new Array(12).fill(TARGET), borderColor:'#D93B30', borderDash:[6,5], pointRadius:0, fill:false },
+        { label: 'Signed agreements (cumulative)', data: companyView.data, borderColor:'#1E88C7', backgroundColor:'rgba(30,136,199,0.1)', fill:true, tension:0.25, pointRadius:3 },
+        { label: 'Annual target', data: companyView.target, borderColor:'#D93B30', borderDash:[6,5], pointRadius:0, fill:false },
       ]
     },
     options: {
       responsive:true, maintainAspectRatio:false,
-      scales:{ y:{ beginAtZero:true, ticks:{precision:0} } },
+      scales:{ y:{ beginAtZero:true, max:TARGET+2, ticks:{precision:0} } },
       plugins:{ legend:{ position:'bottom', labels:{ font:{family:'IBM Plex Mono', size:11} } } }
     }
   });
@@ -1109,7 +1138,9 @@ function renderTargets(){
     });
     const undatedCount = realTotal - datedRows.length;
     const dates = qualifiedRows.map(r=>parseSheetDate(r.qualified_date));
-    const cum = cumulativeMonthlyCounts(dates, year);
+    const cum = cumulativeWeeklyCounts(dates, year);
+    const target = new Array(WEEKS_IN_YEAR).fill(TARGET);
+    const view = truncateToNow(WEEK_LABELS, cum, target, year, 'week');
 
     document.getElementById('eNum'+idx).textContent = realTotal;
     const noteEl = document.getElementById('eNote'+idx);
@@ -1119,18 +1150,21 @@ function renderTargets(){
     }
 
     const chart = new Chart(document.getElementById('eChart'+idx), {
-      type:'bar',
+      type:'line',
       data:{
-        labels: MONTH_LABELS,
+        labels: view.labels,
         datasets:[
-          { label:'Qualified', data:cum, backgroundColor:'#1F9D65', borderRadius:3 },
-          { label:'Target', data:new Array(12).fill(TARGET), type:'line', borderColor:'#D93B30', borderDash:[6,5], pointRadius:0 },
+          { label:'Qualified (cumulative)', data:view.data, borderColor:'#1F9D65', backgroundColor:'rgba(31,157,101,0.1)', fill:true, tension:0.25, pointRadius:2 },
+          { label:'Target', data:view.target, borderColor:'#D93B30', borderDash:[6,5], pointRadius:0, fill:false },
         ]
       },
       options:{
         responsive:true, maintainAspectRatio:false,
-        scales:{ y:{ beginAtZero:true, ticks:{precision:0, font:{size:9}} }, x:{ ticks:{font:{size:8}} } },
-        plugins:{ legend:{ display:false } }
+        scales:{
+          y:{ beginAtZero:true, max:TARGET+2, ticks:{precision:0, font:{size:9}} },
+          x:{ ticks:{font:{size:8}, autoSkip:true, maxTicksLimit:13} }
+        },
+        plugins:{ legend:{ position:'bottom', labels:{ font:{family:'IBM Plex Mono', size:10}, boxWidth:12 } } }
       }
     });
     engineerChartInstances.push(chart);
