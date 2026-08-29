@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
 
 :root{
@@ -188,6 +189,28 @@ tbody tr:last-child td{border-bottom:none;}
 .foot-note{margin-top:30px; padding:16px 4px 4px; border-top:1px solid var(--line);}
 .foot-note p{font-size:11.5px; color:var(--text-dim); line-height:1.6; max-width:920px;}
 
+.target-headline{display:flex; align-items:baseline; gap:10px; margin-bottom:18px;}
+.target-headline .t-num{font-family:var(--font-display); font-size:34px; font-weight:700; color:var(--cyan);}
+.target-headline .t-of{font-family:var(--font-mono); font-size:15px; color:var(--text-muted);}
+.target-headline .t-note{font-size:12px; color:var(--text-dim); margin-left:auto; font-family:var(--font-mono);}
+.chart-wrap{position:relative; height:260px;}
+
+.tg-warning{
+  display:flex; align-items:center; gap:10px; padding:11px 16px; margin-bottom:18px;
+  background:rgba(217,138,21,0.08); border:1px solid rgba(217,138,21,0.3); border-radius:10px;
+  color:var(--amber); font-size:12px; line-height:1.5;
+}
+.tg-warning svg{flex-shrink:0;}
+
+.engineer-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:16px;}
+.engineer-card{background:var(--bg-panel-raised); border:1px solid var(--line); border-radius:12px; padding:16px;}
+.engineer-card .e-name{font-family:var(--font-display); font-weight:600; font-size:14.5px;}
+.engineer-card .e-progress{display:flex; align-items:baseline; gap:6px; margin:6px 0 12px;}
+.engineer-card .e-num{font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--green);}
+.engineer-card .e-of{font-family:var(--font-mono); font-size:12px; color:var(--text-muted);}
+.engineer-card .e-gap{font-size:11px; color:var(--text-dim); margin-left:auto; font-family:var(--font-mono);}
+.engineer-chart-wrap{position:relative; height:140px;}
+
 @media (max-width:900px){
   .kpi-strip{grid-template-columns:repeat(2,1fr);}
   .topbar{padding:14px 16px; flex-wrap:wrap; gap:10px;}
@@ -215,7 +238,7 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v15 · 29 Aug 2026, 12:33</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v16 · 29 Aug 2026, 12:59</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -225,6 +248,7 @@ tbody tr:last-child td{border-bottom:none;}
 <nav class="page-tabs">
   <button class="page-tab active" id="tabAgBtn" data-page="ag">Agreements &amp; Registration</button>
   <button class="page-tab" id="tabPqBtn" data-page="pq">PQ Follow Up</button>
+  <button class="page-tab" id="tabTgBtn" data-page="tg">Targets</button>
 </nav>
 
 <div class="security-banner">
@@ -359,6 +383,30 @@ tbody tr:last-child td{border-bottom:none;}
       </div>
       <div class="dq-subhead">Data entry errors</div>
       <div class="dq-list" id="dqListPq"></div>
+    </section>
+  </div>
+
+  <!-- ============ TARGETS PAGE ============ -->
+  <div id="pageTg" class="page" style="display:none;">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Company agreement target</h2>
+        <span class="panel-sub">Signed agreements this year vs. annual target of 10</span>
+      </div>
+      <div class="target-headline" id="tgCompanyHeadline"></div>
+      <div class="chart-wrap"><canvas id="chartCompany"></canvas></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Engineer PQ targets</h2>
+        <span class="panel-sub">Qualified products this year per engineer vs. annual target of 10 each</span>
+      </div>
+      <div id="tgDataWarning" class="tg-warning" style="display:none;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span></span>
+      </div>
+      <div class="engineer-grid" id="engineerGrid"></div>
     </section>
   </div>
 
@@ -520,6 +568,8 @@ function mapPqRow(row, i){
     partner: g('Partner'),
     product: g('Product'),
     agreement_sn: g('Agreement SN.'),
+    responsible: g('Responsible Person'),
+    need_pq: g('Need PQ?'),
     compliance_status: g('Compliance Status'),
     business_line: normBL(g('Business Line')),
     documents_ready_date: g('Documents Ready Date'),
@@ -603,11 +653,14 @@ function switchPage(p){
   activePage = p;
   document.getElementById('pageAg').style.display = p==='ag' ? '' : 'none';
   document.getElementById('pagePq').style.display = p==='pq' ? '' : 'none';
+  document.getElementById('pageTg').style.display = p==='tg' ? '' : 'none';
   document.getElementById('tabAgBtn').classList.toggle('active', p==='ag');
   document.getElementById('tabPqBtn').classList.toggle('active', p==='pq');
+  document.getElementById('tabTgBtn').classList.toggle('active', p==='tg');
 }
 document.getElementById('tabAgBtn').addEventListener('click', ()=>switchPage('ag'));
 document.getElementById('tabPqBtn').addEventListener('click', ()=>switchPage('pq'));
+document.getElementById('tabTgBtn').addEventListener('click', ()=>switchPage('tg'));
 
 // ---------- funnel ----------
 function renderFunnelSVG(containerId, stages){
@@ -782,7 +835,17 @@ function computeDqAg(){
 }
 function computeDqPq(){
   const errors = [];
+  const agBySN = new Map(DATA_AG.map(r=>[r.sr, r]));
   DATA_PQ.forEach(r=>{
+    if(!r.responsible)
+      errors.push({rule:'Responsible engineer', message:'Responsible Person is missing.', row:r});
+    if(!r.need_pq)
+      errors.push({rule:'Need PQ?', message:'Need PQ? is not specified.', row:r});
+    if(r.need_pq==='Yes'){
+      const ag = agBySN.get(r.agreement_sn);
+      if(!ag || !ag.se_standard)
+        errors.push({rule:'SE standard', message:'Need PQ is Yes but the linked agreement has no SE Standard.', row:r});
+    }
     if(r.qualified==='Yes' && !r.qualified_date)
       errors.push({rule:'Qualified date', message:'Qualified is Yes but Qualified Date is missing.', row:r});
     if(!r.business_line)
@@ -957,6 +1020,100 @@ document.getElementById('resetPq').addEventListener('click', ()=>{
   sortPq = {key:null, dir:1}; renderTablePq();
 });
 
+// ---------- targets ----------
+const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+let chartCompanyInstance = null;
+let engineerChartInstances = [];
+
+function cumulativeMonthlyCounts(dates, year){
+  const monthly = new Array(12).fill(0);
+  dates.forEach(d=>{
+    if(d && d.getFullYear()===year) monthly[d.getMonth()]++;
+  });
+  const cumulative = [];
+  let running = 0;
+  monthly.forEach(m=>{ running += m; cumulative.push(running); });
+  return cumulative;
+}
+
+function renderTargets(){
+  const year = new Date().getFullYear();
+  const TARGET = 10;
+
+  // ---- company agreement target ----
+  const signedDates = DATA_AG.filter(r=>r.agreement_status==='Signed').map(r=>parseSheetDate(r.agreement_start));
+  const companyCum = cumulativeMonthlyCounts(signedDates, year);
+  const companyTotal = companyCum[companyCum.length-1];
+
+  document.getElementById('tgCompanyHeadline').innerHTML = `
+    <span class="t-num">${companyTotal}</span><span class="t-of">of ${TARGET} agreements signed in ${year}</span>
+    <span class="t-note">${companyTotal>=TARGET ? 'Target reached' : (TARGET-companyTotal)+' remaining'}</span>
+  `;
+  if(chartCompanyInstance) chartCompanyInstance.destroy();
+  chartCompanyInstance = new Chart(document.getElementById('chartCompany'), {
+    type: 'line',
+    data: {
+      labels: MONTH_LABELS,
+      datasets: [
+        { label: 'Signed agreements (cumulative)', data: companyCum, borderColor:'#1E88C7', backgroundColor:'rgba(30,136,199,0.1)', fill:true, tension:0.25, pointRadius:3 },
+        { label: 'Annual target', data: new Array(12).fill(TARGET), borderColor:'#D93B30', borderDash:[6,5], pointRadius:0, fill:false },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      scales:{ y:{ beginAtZero:true, ticks:{precision:0} } },
+      plugins:{ legend:{ position:'bottom', labels:{ font:{family:'IBM Plex Mono', size:11} } } }
+    }
+  });
+
+  // ---- engineer PQ targets ----
+  const engineers = Array.from(new Set(DATA_PQ.map(r=>r.responsible).filter(Boolean))).sort();
+  const anyQualifiedDate = DATA_PQ.some(r=>r.qualified==='Yes' && parseSheetDate(r.qualified_date));
+  const anyQualifiedAtAll = DATA_PQ.some(r=>r.qualified==='Yes');
+  const warning = document.getElementById('tgDataWarning');
+  if(anyQualifiedAtAll && !anyQualifiedDate){
+    warning.style.display = 'flex';
+    warning.querySelector('span').textContent = 'Every currently-qualified product is missing a Qualified Date, so this chart can\'t place any of them on the timeline yet. Fill in Qualified Date for qualified rows to see real progress here — see Data Quality on the PQ tab.';
+  } else {
+    warning.style.display = 'none';
+  }
+
+  engineerChartInstances.forEach(c=>c.destroy());
+  engineerChartInstances = [];
+  const grid = document.getElementById('engineerGrid');
+  grid.innerHTML = engineers.map((eng,idx)=>`
+    <div class="engineer-card">
+      <div class="e-name">${esc(eng)}</div>
+      <div class="e-progress">
+        <span class="e-num" id="eNum${idx}">0</span><span class="e-of">of ${TARGET} this year</span>
+      </div>
+      <div class="engineer-chart-wrap"><canvas id="eChart${idx}"></canvas></div>
+    </div>`).join('');
+
+  engineers.forEach((eng, idx)=>{
+    const dates = DATA_PQ.filter(r=>r.responsible===eng && r.qualified==='Yes').map(r=>parseSheetDate(r.qualified_date));
+    const cum = cumulativeMonthlyCounts(dates, year);
+    const total = cum[cum.length-1];
+    document.getElementById('eNum'+idx).textContent = total;
+    const chart = new Chart(document.getElementById('eChart'+idx), {
+      type:'bar',
+      data:{
+        labels: MONTH_LABELS,
+        datasets:[
+          { label:'Qualified', data:cum, backgroundColor:'#1F9D65', borderRadius:3 },
+          { label:'Target', data:new Array(12).fill(TARGET), type:'line', borderColor:'#D93B30', borderDash:[6,5], pointRadius:0 },
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{ y:{ beginAtZero:true, ticks:{precision:0, font:{size:9}} }, x:{ ticks:{font:{size:8}} } },
+        plugins:{ legend:{ display:false } }
+      }
+    });
+    engineerChartInstances.push(chart);
+  });
+}
+
 function openAgreementBySN(sn){
   const row = DATA_AG.find(r=>r.sr===sn);
   if(row){ switchPage('ag'); openDrawer(row, 'ag'); }
@@ -1011,6 +1168,8 @@ function openDrawer(r, page){
         <div class="d-row"><span class="d-k">Stage</span><span class="d-v">${pqStageBadge(r.stage, r.compliance_status)}</span></div>
         <div class="d-row"><span class="d-k">Product</span><span class="d-v">${esc(r.product||'—')}</span></div>
         <div class="d-row"><span class="d-k">Agreement</span><span class="d-v"><span class="sn-code sn-link" id="drawerAgLink">${esc(r.agreement_sn||'—')}</span></span></div>
+        <div class="d-row"><span class="d-k">Responsible</span><span class="d-v">${esc(r.responsible||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Needs PQ?</span><span class="d-v">${yesNoBadge(r.need_pq)}</span></div>
         <div class="d-row"><span class="d-k">Compliance status</span><span class="d-v">${esc(r.compliance_status||'—')}</span></div>
         <div class="d-row"><span class="d-k">PQ submitted</span><span class="d-v">${esc(r.pq_submit_date||'—')}</span></div>
         <div class="d-row"><span class="d-k">Last vendor reply</span><span class="d-v">${esc(r.last_vendor_reply||'—')}</span></div>
@@ -1059,14 +1218,16 @@ async function loadData(){
   document.getElementById('lastUpdated').textContent = 'Loading…';
   try{
     const [agRaw, pqRaw] = await Promise.all([fetchCSV(AGREEMENTS_CSV_URL), fetchCSV(PQ_CSV_URL)]);
-    DATA_AG = agRaw.filter(r=>{ const g=makeGetter(r); return g('Partner'); }).map(mapAgRow);
-    DATA_PQ = pqRaw.filter(r=>{ const g=makeGetter(r); return g('Partner'); }).map(mapPqRow);
+    DATA_AG = agRaw.filter(r=>{ const g=makeGetter(r); return g('Partner'); }).map(mapAgRow).reverse();
+    DATA_PQ = pqRaw.filter(r=>{ const g=makeGetter(r); return g('Partner'); }).map(mapPqRow).reverse();
 
     computeKpisAg(); renderAgFlow(); renderAlertsAg(); populateFiltersAg(); renderTableAg();
     renderDq('dqListAg','dqCountAg', computeDqAg(), 'ag');
 
     computeKpisPq(); renderPqFlow(); renderAlertsPq(); populateFiltersPq(); renderTablePq();
     renderDq('dqListPq','dqCountPq', computeDqPq(), 'pq');
+
+    renderTargets();
 
     document.getElementById('loadingBanner').style.display = 'none';
     document.getElementById('mainContent').style.display = '';
