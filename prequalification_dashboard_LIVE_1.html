@@ -118,6 +118,8 @@ thead th:hover{color:var(--cyan);}
 tbody td{padding:11px 14px; border-bottom:1px solid var(--line); font-size:13.5px; vertical-align:middle;}
 tbody tr{cursor:pointer; transition:background .1s;}
 tbody tr:hover{background:rgba(30,136,199,0.05);}
+tbody tr.row-error{background:rgba(217,59,48,0.06);}
+tbody tr.row-error:hover{background:rgba(217,59,48,0.12);}
 tbody tr:last-child td{border-bottom:none;}
 .cell-partner{font-family:var(--font-display); font-weight:600; font-size:13px;}
 .cell-sub{color:var(--text-dim); font-size:12px; margin-top:2px;}
@@ -210,7 +212,7 @@ tbody tr:last-child td{border-bottom:none;}
 .engineer-card .e-of{font-family:var(--font-mono); font-size:12px; color:var(--text-muted);}
 .engineer-card .e-gap{font-size:11px; color:var(--text-dim); margin-left:auto; font-family:var(--font-mono);}
 .engineer-card .e-note{font-size:10.5px; color:var(--amber); margin-bottom:10px; line-height:1.4; font-family:var(--font-mono);}
-.engineer-chart-wrap{position:relative; height:220px;}
+.engineer-chart-wrap{position:relative; height:250px;}
 
 @media (max-width:900px){
   .kpi-strip{grid-template-columns:repeat(2,1fr);}
@@ -239,7 +241,7 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v22 · 31 Aug 2026, 22:26</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v24 · 31 Aug 2026, 23:16</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -400,8 +402,13 @@ tbody tr:last-child td{border-bottom:none;}
 
     <section class="panel">
       <div class="panel-head">
-        <h2>Weekly PQ progress</h2>
-        <span class="panel-sub">Cumulative products qualified vs. products with PQ started, week by week</span>
+        <h2>Weekly PQ stage distribution</h2>
+        <span class="panel-sub">Light blue = full 248-product target catalog. Colored = your tracked PQs, by stage, week by week.</span>
+      </div>
+      <div class="toolbar" style="margin-bottom:14px;">
+        <select id="filterStageWeekly" style="max-width:260px;">
+          <option value="">All stages (stacked)</option>
+        </select>
       </div>
       <div class="chart-wrap"><canvas id="chartWeeklyProgress"></canvas></div>
     </section>
@@ -451,7 +458,9 @@ const esc = (s) => (s===null||s===undefined) ? '' : String(s).replace(/[&<>"']/g
 const norm = (s) => (s||'').replace(/\s+/g,' ').trim();
 
 const AG_STAGE_LABELS = {1:'Study', 2:'Initial agreement', 3:'Registration', 4:'Final agreement signing'};
-const PQ_STAGE_LABELS = {1:'Study', 2:'Compliance matrix', 3:'PQ stage', 4:'Qualified', 5:'Factory visit', 6:'Listed in KSA'};
+const PQ_STAGE_LABELS = {1:'Work Started', 2:'Study In Progress', 3:'Compliance Matrix Done', 4:'PQ Submitted', 5:'Qualified', 6:'Listed in KSA'};
+const PQ_STAGE_DATE_FIELD = {1:'work_started_date', 2:'study_in_progress_date', 3:'documents_ready_date', 4:'pq_submit_date', 5:'qualified_date', 6:'listed_date'};
+const PQ_STAGE_COLORS = {1:'#6FB3DE', 2:'#1E88C7', 3:'#8354C4', 4:'#D98A15', 5:'#1F9D65', 6:'#0F6E3F'};
 const MONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
 
 let DATA_AG = [];
@@ -528,12 +537,13 @@ function computeAgStage(r){
   return 1;
 }
 function computePqStage(r){
+  if(!r.target_product) return null; // no target product = data-entry error, excluded from funnel entirely
   if(r.shortlisted==='Yes') return 6;
-  if(r.qualified==='Yes') return r.waiting_visit_status==='Yes' ? 5 : 4;
-  if(r.pq_submit_date) return 3;
-  if(r.compliance_status==='On Hold') return null;
-  if(['Under Study','Partially Comply','Comply'].includes(r.compliance_status)) return 2;
-  return 1;
+  if(r.qualified==='Yes') return 5; // qualified is source of truth even if PQ submit date is missing (flagged separately as an error)
+  if(r.pq_submit_date) return 4;
+  if(r.compliance_status==='Comply' || r.compliance_status==='Partially Comply') return 3;
+  if(r.compliance_status==='Under Study') return 2;
+  return 1; // covers 'Study hasn't Started', 'On Hold', and any other/blank value while a target product is assigned
 }
 
 function mapAgRow(row, i){
@@ -583,6 +593,9 @@ function mapPqRow(row, i){
     compliance_status: g('Compliance Status'),
     business_line: normBL(g('Business Line')),
     documents_ready_date: g('Documents Ready Date'),
+    work_started_date: g('Work Started Date'),
+    study_in_progress_date: g('Study In Progress Date'),
+    listed_date: g('Listed Date'),
     pq_submit_date: g('PQ Submit Date'),
     last_vendor_reply: g('Last Vendor reply Date'),
     last_comment_se_date: g('Last Comments SE Date'),
@@ -628,11 +641,12 @@ function agStageBadge(n, status){
   if(n===4) return `<span class="badge badge-yes">${esc(AG_STAGE_LABELS[n])}</span>`;
   return `<span class="badge badge-stage">${esc(AG_STAGE_LABELS[n]||'')}</span>`;
 }
-function pqStageBadge(n, complianceStatus){
-  if(complianceStatus==='On Hold') return `<span class="badge badge-onhold">On hold</span>`;
+function pqStageBadge(n, hasTargetProduct){
+  if(!hasTargetProduct) return `<span class="badge badge-expired">No target product</span>`;
   if(!n) return `<span class="badge badge-notstarted">—</span>`;
-  if(n===6) return `<span class="badge badge-yes">${esc(PQ_STAGE_LABELS[n])}</span>`;
-  return `<span class="badge badge-stage">${esc(PQ_STAGE_LABELS[n]||'')}</span>`;
+  const label = `${PQ_STAGE_LABELS[n]} - Stage ${n}`;
+  if(n===6) return `<span class="badge badge-yes">${esc(label)}</span>`;
+  return `<span class="badge badge-stage">${esc(label)}</span>`;
 }
 
 function showToast(msg){
@@ -706,11 +720,11 @@ function renderAgFlow(){
 function renderPqFlow(){
   const cum = n => DATA_PQ.filter(r=>r.stage!==null && r.stage>=n).length;
   renderFunnelSVG('flowSvgWrapPq', [
-    {label:'Study', sub:'reached', count:cum(1), done:false},
-    {label:'Compliance matrix', sub:'reached', count:cum(2), done:false},
-    {label:'PQ stage', sub:'reached', count:cum(3), done:false},
-    {label:'Qualified', sub:'reached', count:cum(4), done:true},
-    {label:'Factory visit', sub:'reached', count:cum(5), done:false},
+    {label:'Work Started', sub:'reached', count:cum(1), done:false},
+    {label:'Study In Progress', sub:'reached', count:cum(2), done:false},
+    {label:'Matrix Done', sub:'reached', count:cum(3), done:false},
+    {label:'PQ Submitted', sub:'reached', count:cum(4), done:false},
+    {label:'Qualified', sub:'reached', count:cum(5), done:true},
     {label:'Listed in KSA', sub:'complete', count:cum(6), done:true},
   ]);
 }
@@ -847,6 +861,8 @@ function computeDqPq(){
   const errors = [];
   const agBySN = new Map(DATA_AG.map(r=>[r.sr, r]));
   DATA_PQ.forEach(r=>{
+    if(!r.target_product)
+      errors.push({rule:'Target product', message:'No Target Product selected — this row is excluded from the PQ funnel until fixed.', row:r});
     if(!r.responsible)
       errors.push({rule:'Responsible engineer', message:'Responsible Person is missing.', row:r});
     if(!r.need_pq)
@@ -858,6 +874,8 @@ function computeDqPq(){
     }
     if(r.qualified==='Yes' && !r.qualified_date)
       errors.push({rule:'Qualified date', message:'Qualified is Yes but Qualified Date is missing.', row:r});
+    if(r.qualified==='Yes' && !r.pq_submit_date)
+      errors.push({rule:'PQ submit date', message:'Qualified is Yes but PQ Submit Date is missing — a product must be submitted before it can qualify.', row:r});
     if(!r.business_line)
       errors.push({rule:'Business line', message:'Business Line is not specified.', row:r});
   });
@@ -991,13 +1009,13 @@ function renderTablePq(){
   if(rows.length===0){ tbody.innerHTML=''; empty.style.display=''; return; }
   empty.style.display='none';
   tbody.innerHTML = rows.map(r=>`
-    <tr data-row-id="${r.rowId}">
+    <tr data-row-id="${r.rowId}" class="${!r.target_product?'row-error':''}">
       <td><span class="sn-code">${esc(r.sr)}</span></td>
       <td class="cell-partner">${esc(r.partner)}</td>
       <td>${esc(r.product||'—')}</td>
       <td><span class="sn-code sn-link" data-agsn="${esc(r.agreement_sn)}">${esc(r.agreement_sn||'—')}</span></td>
       <td>${esc(r.business_line||'—')}</td>
-      <td>${pqStageBadge(r.stage, r.compliance_status)}</td>
+      <td>${pqStageBadge(r.stage, !!r.target_product)}</td>
       <td>${esc(r.compliance_status||'—')}</td>
       <td>${yesNoBadge(r.qualified)}</td>
     </tr>`).join('');
@@ -1035,8 +1053,6 @@ const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct
 const WEEKS_IN_YEAR = 52;
 const WEEK_LABELS = Array.from({length:WEEKS_IN_YEAR}, (_,i)=>'W'+(i+1));
 let chartCompanyInstance = null;
-let chartWeeklyProgressInstance = null;
-let engineerChartInstances = [];
 
 function cumulativeMonthlyCounts(dates, year){
   const monthly = new Array(12).fill(0);
@@ -1074,6 +1090,95 @@ function truncateToNow(labels, data, targetArr, year, period){
   return { labels: labels.slice(0,end), data: data.slice(0,end), target: targetArr.slice(0,end) };
 }
 
+// chart instances tracked by canvas id, so any number of engineer charts can be managed
+const stageChartInstances = new Map();
+
+function populateStageDropdown(sel){
+  if(sel.dataset.populated) return;
+  [1,2,3,4,5,6].forEach(n=>{
+    const o = document.createElement('option');
+    o.value = n;
+    o.textContent = 'Stage '+n+' · '+PQ_STAGE_LABELS[n];
+    sel.appendChild(o);
+  });
+  sel.dataset.populated = '1';
+}
+
+const TARGET_CATALOG_SIZE = 248;
+
+// Generic stage-distribution chart. `rows` = the PQ rows in scope (all of DATA_PQ for company-wide, or one engineer's rows).
+// `showCatalogReference` = true only for the company-wide chart (248 target catalog backdrop) — doesn't apply to a single engineer.
+function renderStageChart(canvasId, dropdownId, rows, year, showCatalogReference){
+  const dropdown = document.getElementById(dropdownId);
+  populateStageDropdown(dropdown);
+  const selectedStage = dropdown.value;
+
+  if(stageChartInstances.has(canvasId)) stageChartInstances.get(canvasId).destroy();
+  const ctx = document.getElementById(canvasId);
+
+  if(!selectedStage){
+    // All 6 stages, stacked. Any stage with no date data anywhere just comes out flat at 0 — no special-casing needed.
+    const stageSeries = [1,2,3,4,5,6].map(n=>{
+      const field = PQ_STAGE_DATE_FIELD[n];
+      const dates = rows.filter(r=>r.stage!==null && r.stage>=n).map(r=>parseSheetDate(r[field]));
+      const weekly = cumulativeWeeklyCounts(dates, year);
+      return { n, weekly };
+    });
+    const dummyTarget = new Array(WEEKS_IN_YEAR).fill(0);
+    const firstView = truncateToNow(WEEK_LABELS, stageSeries[0].weekly, dummyTarget, year, 'week');
+    const labels = firstView.labels;
+    const datasets = stageSeries.map(s=>{
+      const view = truncateToNow(WEEK_LABELS, s.weekly, dummyTarget, year, 'week');
+      return { type:'bar', label:'Stage '+s.n+' · '+PQ_STAGE_LABELS[s.n], data: view.data, backgroundColor: PQ_STAGE_COLORS[s.n], stack:'s', order:1 };
+    });
+    let yMax;
+    if(showCatalogReference){
+      datasets.unshift({ type:'line', label:'Full target catalog ('+TARGET_CATALOG_SIZE+')', data:new Array(labels.length).fill(TARGET_CATALOG_SIZE), borderColor:'#BFDCEE', borderWidth:2, pointRadius:0, fill:false, order:0 });
+      yMax = TARGET_CATALOG_SIZE + 20;
+    } else {
+      const stackedMax = Math.max(1, ...labels.map((_,i)=>stageSeries.reduce((sum,s)=>{
+        const view = truncateToNow(WEEK_LABELS, s.weekly, dummyTarget, year, 'week');
+        return sum + (view.data[i]||0);
+      },0)));
+      yMax = Math.ceil(stackedMax*1.3)+1;
+    }
+    stageChartInstances.set(canvasId, new Chart(ctx, {
+      data: { labels, datasets },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        scales:{ x:{ stacked:true, ticks:{autoSkip:true, maxTicksLimit:13, font:{size:9}} }, y:{ stacked:true, beginAtZero:true, max:yMax, ticks:{precision:0, font:{size:9}} } },
+        plugins:{ legend:{ position:'bottom', labels:{ font:{family:'IBM Plex Mono', size:9.5}, boxWidth:10 } } }
+      }
+    }));
+  } else {
+    // single stage — own adaptable y-axis
+    const n = parseInt(selectedStage);
+    const field = PQ_STAGE_DATE_FIELD[n];
+    const dates = rows.filter(r=>r.stage!==null && r.stage>=n).map(r=>parseSheetDate(r[field]));
+    const weekly = cumulativeWeeklyCounts(dates, year);
+    const dummyTarget = new Array(weekly.length).fill(0);
+    const view = truncateToNow(WEEK_LABELS, weekly, dummyTarget, year, 'week');
+    const maxVal = Math.max(...view.data, 1);
+    const yMax = Math.ceil(maxVal*1.3)+1;
+    stageChartInstances.set(canvasId, new Chart(ctx, {
+      type:'bar',
+      data: {
+        labels: view.labels,
+        datasets: [ { label:'Stage '+n+' · '+PQ_STAGE_LABELS[n]+' (cumulative)', data: view.data, backgroundColor: PQ_STAGE_COLORS[n], borderRadius:3 } ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        scales:{ x:{ ticks:{autoSkip:true, maxTicksLimit:13, font:{size:9}} }, y:{ beginAtZero:true, max:yMax, ticks:{precision:0, font:{size:9}} } },
+        plugins:{ legend:{ position:'bottom', labels:{ font:{family:'IBM Plex Mono', size:10} } } }
+      }
+    }));
+  }
+}
+
+document.getElementById('filterStageWeekly').addEventListener('change', ()=>{
+  renderStageChart('chartWeeklyProgress', 'filterStageWeekly', DATA_PQ, new Date().getFullYear(), true);
+});
+
 function renderTargets(){
   const year = new Date().getFullYear();
   const TARGET = 10;
@@ -1106,31 +1211,8 @@ function renderTargets(){
     }
   });
 
-  // ---- weekly PQ progress (clustered: qualified vs started, company-wide) ----
-  const allQualifiedDates = DATA_PQ.filter(r=>r.qualified==='Yes').map(r=>parseSheetDate(r.qualified_date));
-  const allStartedDates = DATA_PQ.filter(r=>r.pq_submit_date).map(r=>parseSheetDate(r.pq_submit_date));
-  const qualifiedWeekly = cumulativeWeeklyCounts(allQualifiedDates, year);
-  const startedWeekly = cumulativeWeeklyCounts(allStartedDates, year);
-  const wpView = truncateToNow(WEEK_LABELS, qualifiedWeekly, startedWeekly, year, 'week');
-  // truncateToNow's 3rd arg is generic — reuse it here for the "started" series instead of a target line
-  const startedTruncated = wpView.target;
-
-  if(chartWeeklyProgressInstance) chartWeeklyProgressInstance.destroy();
-  chartWeeklyProgressInstance = new Chart(document.getElementById('chartWeeklyProgress'), {
-    type: 'bar',
-    data: {
-      labels: wpView.labels,
-      datasets: [
-        { label: 'Qualified (cumulative)', data: wpView.data, backgroundColor:'#1F9D65', borderRadius:3 },
-        { label: 'PQ started (cumulative)', data: startedTruncated, backgroundColor:'#D98A15', borderRadius:3 },
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      scales:{ y:{ beginAtZero:true, ticks:{precision:0} }, x:{ ticks:{autoSkip:true, maxTicksLimit:15} } },
-      plugins:{ legend:{ position:'bottom', labels:{ font:{family:'IBM Plex Mono', size:11} } } }
-    }
-  });
+  // ---- weekly PQ stage distribution ----
+  renderStageChart('chartWeeklyProgress', 'filterStageWeekly', DATA_PQ, year, true);
 
   // ---- engineer PQ targets ----
   const engineers = Array.from(new Set(DATA_PQ.map(r=>r.responsible).filter(Boolean))).sort();
@@ -1152,64 +1234,45 @@ function renderTargets(){
     warning.style.display = 'none';
   }
 
-  engineerChartInstances.forEach(c=>c.destroy());
-  engineerChartInstances = [];
   const grid = document.getElementById('engineerGrid');
   grid.innerHTML = engineers.map((eng,idx)=>`
     <div class="engineer-card">
       <div class="e-name">${esc(eng)}</div>
       <div class="e-progress">
-        <span class="e-num" id="eNum${idx}">0</span><span class="e-of">of ${TARGET} this year</span>
+        <span class="e-num" id="eNum${idx}">0</span><span class="e-of">of ${TARGET} qualified this year</span>
       </div>
       <div class="e-note" id="eNote${idx}" style="display:none;"></div>
+      <div class="toolbar" style="margin-bottom:10px;">
+        <select id="filterStageEng${idx}" style="max-width:220px; font-size:11.5px;">
+          <option value="">All stages (stacked)</option>
+        </select>
+      </div>
       <div class="engineer-chart-wrap"><canvas id="eChart${idx}"></canvas></div>
     </div>`).join('');
 
   engineers.forEach((eng, idx)=>{
-    const qualifiedRows = DATA_PQ.filter(r=>r.responsible===eng && r.qualified==='Yes');
+    const engRows = DATA_PQ.filter(r=>r.responsible===eng);
+    const qualifiedRows = engRows.filter(r=>r.qualified==='Yes');
     const realTotal = qualifiedRows.length;
     const datedRows = qualifiedRows.filter(r=>{
       const d = parseSheetDate(r.qualified_date);
       return d && d.getFullYear()===year;
     });
     const undatedCount = realTotal - datedRows.length;
-    const dates = qualifiedRows.map(r=>parseSheetDate(r.qualified_date));
-    const cum = cumulativeWeeklyCounts(dates, year);
-    const target = new Array(WEEKS_IN_YEAR).fill(TARGET);
-    const view = truncateToNow(WEEK_LABELS, cum, target, year, 'week');
-
-    const startedRows = DATA_PQ.filter(r=>r.responsible===eng && r.pq_submit_date);
-    const startedDates = startedRows.map(r=>parseSheetDate(r.pq_submit_date));
-    const startedCum = cumulativeWeeklyCounts(startedDates, year);
-    const startedView = truncateToNow(WEEK_LABELS, startedCum, target, year, 'week');
 
     document.getElementById('eNum'+idx).textContent = realTotal;
     const noteEl = document.getElementById('eNote'+idx);
     if(noteEl){
-      noteEl.textContent = undatedCount>0 ? undatedCount+' qualified but missing a date, so not placed on the chart below' : '';
+      noteEl.textContent = undatedCount>0 ? undatedCount+' qualified but missing a Qualified Date' : '';
       noteEl.style.display = undatedCount>0 ? '' : 'none';
     }
 
-    const chart = new Chart(document.getElementById('eChart'+idx), {
-      type:'line',
-      data:{
-        labels: view.labels,
-        datasets:[
-          { label:'Qualified (cumulative)', data:view.data, borderColor:'#1F9D65', backgroundColor:'rgba(31,157,101,0.1)', fill:true, tension:0.25, pointRadius:2 },
-          { label:'PQ started (cumulative)', data:startedView.data, borderColor:'#D98A15', backgroundColor:'rgba(217,138,21,0.08)', fill:true, tension:0.25, pointRadius:2 },
-          { label:'Target', data:view.target, borderColor:'#D93B30', borderDash:[6,5], pointRadius:0, fill:false },
-        ]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        scales:{
-          y:{ beginAtZero:true, max:TARGET+2, ticks:{precision:0, font:{size:9}} },
-          x:{ ticks:{font:{size:8}, autoSkip:true, maxTicksLimit:13} }
-        },
-        plugins:{ legend:{ position:'bottom', labels:{ font:{family:'IBM Plex Mono', size:10}, boxWidth:12 } } }
-      }
+    const dropdownId = 'filterStageEng'+idx;
+    const canvasId = 'eChart'+idx;
+    document.getElementById(dropdownId).addEventListener('change', ()=>{
+      renderStageChart(canvasId, dropdownId, engRows, new Date().getFullYear(), false);
     });
-    engineerChartInstances.push(chart);
+    renderStageChart(canvasId, dropdownId, engRows, year, false);
   });
 }
 
@@ -1264,7 +1327,7 @@ function openDrawer(r, page){
     body = `
       <div class="d-section">
         <div class="d-section-title">Product</div>
-        <div class="d-row"><span class="d-k">Stage</span><span class="d-v">${pqStageBadge(r.stage, r.compliance_status)}</span></div>
+        <div class="d-row"><span class="d-k">Stage</span><span class="d-v">${pqStageBadge(r.stage, !!r.target_product)}</span></div>
         <div class="d-row"><span class="d-k">Product</span><span class="d-v">${esc(r.product||'—')}</span></div>
         <div class="d-row"><span class="d-k">Target product</span><span class="d-v">${esc(r.target_product||'—')}</span></div>
         <div class="d-row"><span class="d-k">Agreement</span><span class="d-v"><span class="sn-code sn-link" id="drawerAgLink">${esc(r.agreement_sn||'—')}</span></span></div>
