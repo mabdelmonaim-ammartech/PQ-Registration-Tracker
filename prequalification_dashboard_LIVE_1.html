@@ -23,7 +23,7 @@ body{
   background:
     radial-gradient(1200px 600px at 15% -10%, rgba(30,136,199,0.06), transparent 60%),
     radial-gradient(900px 500px at 100% 0%, rgba(217,138,21,0.04), transparent 55%), var(--bg);
-  color:var(--text); font-family:var(--font-body); font-size:20px; line-height:1.5; min-height:100vh;
+  color:var(--text); font-family:var(--font-body); font-size:14px; line-height:1.5; min-height:100vh;
 }
 main{position:relative; z-index:1; max-width:1280px; margin:0 auto; padding:0 28px 60px;}
 
@@ -239,7 +239,7 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v21 · 31 Aug 2026, 09:07</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v22 · 31 Aug 2026, 22:26</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -396,6 +396,14 @@ tbody tr:last-child td{border-bottom:none;}
       </div>
       <div class="target-headline" id="tgCompanyHeadline"></div>
       <div class="chart-wrap"><canvas id="chartCompany"></canvas></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Weekly PQ progress</h2>
+        <span class="panel-sub">Cumulative products qualified vs. products with PQ started, week by week</span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartWeeklyProgress"></canvas></div>
     </section>
 
     <section class="panel">
@@ -571,6 +579,7 @@ function mapPqRow(row, i){
     agreement_sn: g('Agreement SN.'),
     responsible: g('Responsible Person'),
     need_pq: g('Need PQ?'),
+    target_product: g('Target Product'),
     compliance_status: g('Compliance Status'),
     business_line: normBL(g('Business Line')),
     documents_ready_date: g('Documents Ready Date'),
@@ -1026,6 +1035,7 @@ const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct
 const WEEKS_IN_YEAR = 52;
 const WEEK_LABELS = Array.from({length:WEEKS_IN_YEAR}, (_,i)=>'W'+(i+1));
 let chartCompanyInstance = null;
+let chartWeeklyProgressInstance = null;
 let engineerChartInstances = [];
 
 function cumulativeMonthlyCounts(dates, year){
@@ -1096,6 +1106,32 @@ function renderTargets(){
     }
   });
 
+  // ---- weekly PQ progress (clustered: qualified vs started, company-wide) ----
+  const allQualifiedDates = DATA_PQ.filter(r=>r.qualified==='Yes').map(r=>parseSheetDate(r.qualified_date));
+  const allStartedDates = DATA_PQ.filter(r=>r.pq_submit_date).map(r=>parseSheetDate(r.pq_submit_date));
+  const qualifiedWeekly = cumulativeWeeklyCounts(allQualifiedDates, year);
+  const startedWeekly = cumulativeWeeklyCounts(allStartedDates, year);
+  const wpView = truncateToNow(WEEK_LABELS, qualifiedWeekly, startedWeekly, year, 'week');
+  // truncateToNow's 3rd arg is generic — reuse it here for the "started" series instead of a target line
+  const startedTruncated = wpView.target;
+
+  if(chartWeeklyProgressInstance) chartWeeklyProgressInstance.destroy();
+  chartWeeklyProgressInstance = new Chart(document.getElementById('chartWeeklyProgress'), {
+    type: 'bar',
+    data: {
+      labels: wpView.labels,
+      datasets: [
+        { label: 'Qualified (cumulative)', data: wpView.data, backgroundColor:'#1F9D65', borderRadius:3 },
+        { label: 'PQ started (cumulative)', data: startedTruncated, backgroundColor:'#D98A15', borderRadius:3 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      scales:{ y:{ beginAtZero:true, ticks:{precision:0} }, x:{ ticks:{autoSkip:true, maxTicksLimit:15} } },
+      plugins:{ legend:{ position:'bottom', labels:{ font:{family:'IBM Plex Mono', size:11} } } }
+    }
+  });
+
   // ---- engineer PQ targets ----
   const engineers = Array.from(new Set(DATA_PQ.map(r=>r.responsible).filter(Boolean))).sort();
   const anyQualifiedDate = DATA_PQ.some(r=>r.qualified==='Yes' && parseSheetDate(r.qualified_date));
@@ -1142,6 +1178,11 @@ function renderTargets(){
     const target = new Array(WEEKS_IN_YEAR).fill(TARGET);
     const view = truncateToNow(WEEK_LABELS, cum, target, year, 'week');
 
+    const startedRows = DATA_PQ.filter(r=>r.responsible===eng && r.pq_submit_date);
+    const startedDates = startedRows.map(r=>parseSheetDate(r.pq_submit_date));
+    const startedCum = cumulativeWeeklyCounts(startedDates, year);
+    const startedView = truncateToNow(WEEK_LABELS, startedCum, target, year, 'week');
+
     document.getElementById('eNum'+idx).textContent = realTotal;
     const noteEl = document.getElementById('eNote'+idx);
     if(noteEl){
@@ -1155,6 +1196,7 @@ function renderTargets(){
         labels: view.labels,
         datasets:[
           { label:'Qualified (cumulative)', data:view.data, borderColor:'#1F9D65', backgroundColor:'rgba(31,157,101,0.1)', fill:true, tension:0.25, pointRadius:2 },
+          { label:'PQ started (cumulative)', data:startedView.data, borderColor:'#D98A15', backgroundColor:'rgba(217,138,21,0.08)', fill:true, tension:0.25, pointRadius:2 },
           { label:'Target', data:view.target, borderColor:'#D93B30', borderDash:[6,5], pointRadius:0, fill:false },
         ]
       },
@@ -1224,6 +1266,7 @@ function openDrawer(r, page){
         <div class="d-section-title">Product</div>
         <div class="d-row"><span class="d-k">Stage</span><span class="d-v">${pqStageBadge(r.stage, r.compliance_status)}</span></div>
         <div class="d-row"><span class="d-k">Product</span><span class="d-v">${esc(r.product||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Target product</span><span class="d-v">${esc(r.target_product||'—')}</span></div>
         <div class="d-row"><span class="d-k">Agreement</span><span class="d-v"><span class="sn-code sn-link" id="drawerAgLink">${esc(r.agreement_sn||'—')}</span></span></div>
         <div class="d-row"><span class="d-k">Responsible</span><span class="d-v">${esc(r.responsible||'—')}</span></div>
         <div class="d-row"><span class="d-k">Needs PQ?</span><span class="d-v">${yesNoBadge(r.need_pq)}</span></div>
