@@ -241,7 +241,7 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v24 · 31 Aug 2026, 23:16</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v25 · 08 Sep 2026, 09:38</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -273,7 +273,7 @@ tbody tr:last-child td{border-bottom:none;}
     <section class="panel flow-panel">
       <div class="panel-head">
         <h2>Agreement &amp; registration funnel</h2>
-        <span class="panel-sub">Every agreement — where it sits in company onboarding</span>
+        <span class="panel-sub">Number of companies that have reached each stage (or gone further) — not how many are actively working on it right now</span>
       </div>
       <div id="flowSvgWrapAg"></div>
     </section>
@@ -457,7 +457,7 @@ const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
 const esc = (s) => (s===null||s===undefined) ? '' : String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm = (s) => (s||'').replace(/\s+/g,' ').trim();
 
-const AG_STAGE_LABELS = {1:'Study', 2:'Initial agreement', 3:'Registration', 4:'Final agreement signing'};
+const AG_STAGE_LABELS = {1:'Study', 2:'Agreement in Negotiation', 3:'Agreement Signed', 4:'SE Registration in Progress', 5:'SE Registered', 6:'NG Registration in Progress', 7:'NG Registered'};
 const PQ_STAGE_LABELS = {1:'Work Started', 2:'Study In Progress', 3:'Compliance Matrix Done', 4:'PQ Submitted', 5:'Qualified', 6:'Listed in KSA'};
 const PQ_STAGE_DATE_FIELD = {1:'work_started_date', 2:'study_in_progress_date', 3:'documents_ready_date', 4:'pq_submit_date', 5:'qualified_date', 6:'listed_date'};
 const PQ_STAGE_COLORS = {1:'#6FB3DE', 2:'#1E88C7', 3:'#8354C4', 4:'#D98A15', 5:'#1F9D65', 6:'#0F6E3F'};
@@ -524,16 +524,13 @@ function makeGetter(row){
 }
 
 function computeAgStage(r){
-  if(r.agreement_status==='Not Started') return 1;
-  if(r.agreement_status==='On Hold') return null;
-  const seRelevant = r.business_line==='Distribution (SE)' || r.business_line==='Both' || !r.business_line;
-  const ngRelevant = r.business_line==='National Grid (NG)' || r.business_line==='Both';
-  const seDone = r.se_reg_status==='Registered';
-  const ngDone = r.ng_reg_status==='Registered';
-  const complete = (seRelevant ? seDone : true) && (ngRelevant ? ngDone : true);
-  const started = ['In Progress','Registered'].includes(r.se_reg_status) || ['In Progress','Registered'].includes(r.ng_reg_status);
-  if(r.agreement_status==='Signed') return complete ? 4 : 3;
-  if(r.agreement_status==='In Negotiation') return started ? 3 : 2;
+  if(r.agreement_status==='On Hold') return null; // excluded from funnel, shown separately in alerts
+  if(r.ng_reg_status==='Registered') return 7;
+  if(r.ng_reg_status==='In Progress') return 6;
+  if(r.se_reg_status==='Registered') return 5;
+  if(r.se_reg_status==='In Progress') return 4;
+  if(r.agreement_status==='Signed') return 3;
+  if(r.agreement_status==='In Negotiation') return 2;
   return 1;
 }
 function computePqStage(r){
@@ -638,7 +635,7 @@ function expiryBadge(row){
 function agStageBadge(n, status){
   if(status==='On Hold') return `<span class="badge badge-onhold">On hold</span>`;
   if(!n) return `<span class="badge badge-notstarted">—</span>`;
-  if(n===4) return `<span class="badge badge-yes">${esc(AG_STAGE_LABELS[n])}</span>`;
+  if(n===5 || n===7) return `<span class="badge badge-yes">${esc(AG_STAGE_LABELS[n])}</span>`;
   return `<span class="badge badge-stage">${esc(AG_STAGE_LABELS[n]||'')}</span>`;
 }
 function pqStageBadge(n, hasTargetProduct){
@@ -712,9 +709,12 @@ function renderAgFlow(){
   const cum = n => stages.filter(s=>s!==null && s>=n).length;
   renderFunnelSVG('flowSvgWrapAg', [
     {label:'Study', sub:'reached', count:cum(1), done:false},
-    {label:'Initial agreement', sub:'reached', count:cum(2), done:false},
-    {label:'Registration', sub:'reached', count:cum(3), done:false},
-    {label:'Final agreement signing', sub:'complete', count:cum(4), done:true},
+    {label:'Negotiation', sub:'reached', count:cum(2), done:false},
+    {label:'Signed', sub:'reached', count:cum(3), done:false},
+    {label:'SE Reg. Progress', sub:'reached', count:cum(4), done:false},
+    {label:'SE Registered', sub:'reached', count:cum(5), done:true},
+    {label:'NG Reg. Progress', sub:'reached', count:cum(6), done:false},
+    {label:'NG Registered', sub:'reached', count:cum(7), done:true},
   ]);
 }
 function renderPqFlow(){
@@ -732,19 +732,17 @@ function renderPqFlow(){
 // ---------- KPIs ----------
 function computeKpisAg(){
   const total = DATA_AG.length;
-  const signed = DATA_AG.filter(r=>r.agreement_status==='Signed').length;
-  const negotiation = DATA_AG.filter(r=>r.agreement_status==='In Negotiation').length;
-  const seReg = DATA_AG.filter(r=>r.se_reg_status==='Registered').length;
-  const ngReg = DATA_AG.filter(r=>r.ng_reg_status==='Registered').length;
+  const cum = n => DATA_AG.filter(r=>r.stage!==null && r.stage>=n).length;
+  const negotiatingNow = DATA_AG.filter(r=>r.stage===2).length;
   const expiringSoon = DATA_AG.filter(r=>!r.expired && r.remaining_days!==null && r.remaining_days<=180).length;
   const expiredCount = DATA_AG.filter(r=>r.expired).length;
   const onHold = DATA_AG.filter(r=>r.agreement_status==='On Hold').length;
   const needsAttention = expiringSoon+expiredCount+onHold;
   const cards = [
     {num: total, label:'Total agreements', sub: (new Set(DATA_AG.map(r=>r.partner))).size+' unique companies', accent:'var(--cyan)'},
-    {num: signed, label:'Signed', sub: negotiation+' in negotiation', accent:'var(--green)'},
-    {num: seReg, label:'SE registered', sub: (total-seReg)+' pending', accent:'var(--cyan)'},
-    {num: ngReg, label:'NG registered', sub: (total-ngReg)+' pending', accent:'var(--cyan)'},
+    {num: cum(3), label:'Signed (Stage 3+)', sub: negotiatingNow+' currently negotiating', accent:'var(--green)'},
+    {num: cum(5), label:'SE registered (Stage 5+)', sub: (total-cum(5))+' pending', accent:'var(--cyan)'},
+    {num: cum(7), label:'NG registered (Stage 7)', sub: (total-cum(7))+' pending', accent:'var(--cyan)'},
     {num: needsAttention, label:'Needs attention', sub: expiredCount+' expired · '+expiringSoon+' expiring · '+onHold+' on hold', accent:'var(--red)'},
   ];
   document.getElementById('kpiStripAg').innerHTML = cards.map(c=>`
@@ -854,6 +852,8 @@ function computeDqAg(){
       errors.push({rule:'NG reg. date', message:'NG Registration Status is Registered but the date is missing.', row:r});
     if(!r.business_line)
       errors.push({rule:'Business line', message:'Business Line is not specified.', row:r});
+    if((r.ng_reg_status==='In Progress' || r.ng_reg_status==='Registered') && r.se_reg_status!=='Registered')
+      errors.push({rule:'NG before SE', message:'NG registration is '+r.ng_reg_status+' but SE registration is not yet Registered — NG registration requires SE to be completed first.', row:r});
   });
   return errors;
 }
@@ -904,9 +904,14 @@ let sortAg = {key:null, dir:1};
 function uniqueVals(arr, field){ return Array.from(new Set(arr.map(r=>r[field]).filter(Boolean))).sort(); }
 function populateFiltersAg(){
   const stSel = document.getElementById('filterStageAg');
-  [1,2,3,4].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=AG_STAGE_LABELS[n]; stSel.appendChild(o); });
-  uniqueVals(DATA_AG,'business_line').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; document.getElementById('filterBLAg').appendChild(o); });
-  uniqueVals(DATA_AG,'agreement_status').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; document.getElementById('filterStatusAg').appendChild(o); });
+  const blSel = document.getElementById('filterBLAg');
+  const statusSel = document.getElementById('filterStatusAg');
+  stSel.innerHTML = '<option value="">All stages</option>';
+  blSel.innerHTML = '<option value="">All business lines</option>';
+  statusSel.innerHTML = '<option value="">All statuses</option>';
+  [1,2,3,4,5,6,7].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=AG_STAGE_LABELS[n]; stSel.appendChild(o); });
+  uniqueVals(DATA_AG,'business_line').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; blSel.appendChild(o); });
+  uniqueVals(DATA_AG,'agreement_status').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; statusSel.appendChild(o); });
 }
 function getFilteredAg(){
   const q = document.getElementById('searchAg').value.trim().toLowerCase();
@@ -975,9 +980,14 @@ document.getElementById('resetAg').addEventListener('click', ()=>{
 let sortPq = {key:null, dir:1};
 function populateFiltersPq(){
   const stSel = document.getElementById('filterStagePq');
+  const blSel = document.getElementById('filterBLPq');
+  const compSel = document.getElementById('filterCompliancePq');
+  stSel.innerHTML = '<option value="">All stages</option>';
+  blSel.innerHTML = '<option value="">All business lines</option>';
+  compSel.innerHTML = '<option value="">All compliance status</option>';
   [1,2,3,4,5,6].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=PQ_STAGE_LABELS[n]; stSel.appendChild(o); });
-  uniqueVals(DATA_PQ,'business_line').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; document.getElementById('filterBLPq').appendChild(o); });
-  uniqueVals(DATA_PQ,'compliance_status').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; document.getElementById('filterCompliancePq').appendChild(o); });
+  uniqueVals(DATA_PQ,'business_line').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; blSel.appendChild(o); });
+  uniqueVals(DATA_PQ,'compliance_status').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; compSel.appendChild(o); });
 }
 function getFilteredPq(){
   const q = document.getElementById('searchPq').value.trim().toLowerCase();
