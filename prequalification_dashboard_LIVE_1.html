@@ -249,7 +249,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v30 · 08 Sep 2026, 11:12</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v31 · 08 Sep 2026, 11:20</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -303,7 +303,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
         <select id="filterStatusAg"><option value="">All statuses</option></select>
         <button class="btn-ghost small" id="resetAg">Reset</button>
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap" id="tableWrapAg">
         <table id="tableAg">
           <thead><tr>
             <th data-sort="sr">Agreement SN</th>
@@ -369,7 +369,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
         <select id="filterCompliancePq"><option value="">All compliance status</option></select>
         <button class="btn-ghost small" id="resetPq">Reset</button>
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap" id="tableWrapPq">
         <table id="tablePq">
           <thead><tr>
             <th data-sort="sr">PQ SN</th>
@@ -944,7 +944,15 @@ let pageAg = 1, pagePq = 1;
 
 // Keeps the pagination controls in view after a re-render (prevents the page jumping when
 // table height changes between pages) and plays a directional slide-in on the new rows.
-function afterPageChange(paginationId, tbody, direction){
+// Also locks the table's height at the tallest page seen so far, so a shorter last page
+// (fewer than 20 rows) just leaves blank space instead of shrinking the whole layout.
+function afterPageChange(wrapId, paginationId, tbody, direction){
+  const wrap = document.getElementById(wrapId);
+  if(wrap){
+    const natural = wrap.scrollHeight;
+    const current = parseFloat(wrap.style.minHeight) || 0;
+    if(natural > current) wrap.style.minHeight = natural+'px';
+  }
   if(direction){
     tbody.classList.remove('pg-anim-next','pg-anim-prev');
     void tbody.offsetWidth; // restart animation
@@ -987,7 +995,7 @@ function renderTableAg(direction){
       if(row) openDrawer(row, 'ag');
     });
   });
-  afterPageChange('paginationAg', tbody, direction);
+  afterPageChange('tableWrapAg', 'paginationAg', tbody, direction);
 }
 document.getElementById('pagPrevAg').addEventListener('click', ()=>{ pageAg--; renderTableAg('prev'); });
 document.getElementById('pagNextAg').addEventListener('click', ()=>{ pageAg++; renderTableAg('next'); });
@@ -1080,7 +1088,7 @@ function renderTablePq(direction){
       openAgreementBySN(link.getAttribute('data-agsn'));
     });
   });
-  afterPageChange('paginationPq', tbody, direction);
+  afterPageChange('tableWrapPq', 'paginationPq', tbody, direction);
 }
 document.getElementById('pagPrevPq').addEventListener('click', ()=>{ pagePq--; renderTablePq('prev'); });
 document.getElementById('pagNextPq').addEventListener('click', ()=>{ pagePq++; renderTablePq('next'); });
