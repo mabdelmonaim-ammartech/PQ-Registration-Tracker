@@ -27,12 +27,6 @@ body{
 }
 main{position:relative; z-index:1; max-width:1280px; margin:0 auto; padding:0 28px 60px;}
 
-.security-banner{
-  max-width:1280px; margin:0 auto; padding:11px 28px; display:flex; align-items:center; gap:10px;
-  color:var(--red); font-size:12px; line-height:1.5; background:rgba(217,59,48,0.06);
-}
-.security-banner svg{flex-shrink:0;}
-
 .loading-banner{display:flex; align-items:center; gap:12px; justify-content:center; padding:60px 20px; color:var(--text-muted); font-family:var(--font-mono); font-size:13px;}
 .spinner{width:16px; height:16px; border-radius:50%; border:2px solid var(--line); border-top-color:var(--cyan); animation:spin 0.8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -141,6 +135,15 @@ tbody tr:last-child td{border-bottom:none;}
 
 .empty-state{padding:40px; text-align:center; color:var(--text-dim); font-family:var(--font-mono); font-size:12px;}
 
+.pagination{display:flex; align-items:center; justify-content:center; gap:16px; margin-top:16px;}
+.pag-btn{
+  font-family:var(--font-mono); font-size:14px; color:var(--cyan); background:var(--bg-panel-raised);
+  border:1px solid var(--line); width:34px; height:34px; border-radius:7px; cursor:pointer; transition:all .15s ease;
+}
+.pag-btn:hover:not(:disabled){background:rgba(30,136,199,0.1); border-color:var(--cyan-dim);}
+.pag-btn:disabled{color:var(--text-dim); cursor:default; opacity:0.5;}
+.pag-info{font-family:var(--font-mono); font-size:12.5px; color:var(--text-muted); min-width:60px; text-align:center;}
+
 .dq-subhead{font-family:var(--font-display); font-size:13.5px; font-weight:600; color:var(--text); margin-bottom:12px;}
 .dq-list{display:flex; flex-direction:column; gap:8px;}
 .dq-item{display:flex; align-items:center; gap:14px; background:var(--bg-panel-raised); border:1px solid var(--line); border-radius:8px; padding:10px 14px; cursor:pointer; transition:border-color .15s; flex-wrap:wrap;}
@@ -241,7 +244,7 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v27 · 08 Sep 2026, 10:24</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v29 · 08 Sep 2026, 10:59</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -253,11 +256,6 @@ tbody tr:last-child td{border-bottom:none;}
   <button class="page-tab" id="tabPqBtn" data-page="pq">PQ Follow Up</button>
   <button class="page-tab" id="tabTgBtn" data-page="tg">Targets</button>
 </nav>
-
-<div class="security-banner">
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  <span>This dashboard never reads or displays the NG/SE username &amp; password columns. But the underlying published sheet is a public link — remove those columns from the source sheet or move them to a password manager.</span>
-</div>
 
 <div id="loadingBanner" class="loading-banner">
   <div class="spinner"></div>
@@ -317,6 +315,11 @@ tbody tr:last-child td{border-bottom:none;}
         </table>
       </div>
       <div id="emptyAg" class="empty-state" style="display:none;">No records match these filters.</div>
+      <div class="pagination" id="paginationAg">
+        <button class="pag-btn" id="pagPrevAg">&lt;</button>
+        <span class="pag-info" id="pagInfoAg">1 / 1</span>
+        <button class="pag-btn" id="pagNextAg">&gt;</button>
+      </div>
     </section>
 
     <section class="panel dq-panel">
@@ -377,6 +380,11 @@ tbody tr:last-child td{border-bottom:none;}
         </table>
       </div>
       <div id="emptyPq" class="empty-state" style="display:none;">No records match these filters.</div>
+      <div class="pagination" id="paginationPq">
+        <button class="pag-btn" id="pagPrevPq">&lt;</button>
+        <span class="pag-info" id="pagInfoPq">1 / 1</span>
+        <button class="pag-btn" id="pagNextPq">&gt;</button>
+      </div>
     </section>
 
     <section class="panel dq-panel">
@@ -458,9 +466,9 @@ const esc = (s) => (s===null||s===undefined) ? '' : String(s).replace(/[&<>"']/g
 const norm = (s) => (s||'').replace(/\s+/g,' ').trim();
 
 const AG_STAGE_LABELS = {1:'Study', 2:'Agreement Negotiation', 3:'SE Registration', 4:'NG Registration', 5:'Registered'};
-const PQ_STAGE_LABELS = {1:'Work Started', 2:'Study In Progress', 3:'Compliance Matrix Done', 4:'PQ Submitted', 5:'Qualified', 6:'Listed in KSA'};
-const PQ_STAGE_DATE_FIELD = {1:'work_started_date', 2:'study_in_progress_date', 3:'documents_ready_date', 4:'pq_submit_date', 5:'qualified_date', 6:'listed_date'};
-const PQ_STAGE_COLORS = {1:'#6FB3DE', 2:'#1E88C7', 3:'#8354C4', 4:'#D98A15', 5:'#1F9D65', 6:'#0F6E3F'};
+const PQ_STAGE_LABELS = {1:'Work Started', 2:'Study In Progress', 3:'Compliance Matrix Done', 4:'PQ Submitted', 5:'Qualified'};
+const PQ_STAGE_DATE_FIELD = {1:'work_started_date', 2:'study_in_progress_date', 3:'documents_ready_date', 4:'pq_submit_date', 5:'qualified_date'};
+const PQ_STAGE_COLORS = {1:'#6FB3DE', 2:'#1E88C7', 3:'#8354C4', 4:'#D98A15', 5:'#1F9D65'};
 const MONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
 
 let DATA_AG = [];
@@ -543,8 +551,7 @@ function computeAgStage(r){
 }
 function computePqStage(r){
   if(!r.target_product) return null; // no target product = data-entry error, excluded from funnel entirely
-  if(r.shortlisted==='Yes') return 6;
-  if(r.qualified==='Yes') return 5; // qualified is source of truth even if PQ submit date is missing (flagged separately as an error)
+  if(r.qualified==='Yes') return 5; // final — Listed products are also Qualified, so they land here too, not a separate bucket
   if(r.pq_submit_date) return 4;
   if(r.compliance_status==='Comply' || r.compliance_status==='Partially Comply') return 3;
   if(r.compliance_status==='Under Study') return 2;
@@ -650,7 +657,7 @@ function pqStageBadge(n, hasTargetProduct){
   if(!hasTargetProduct) return `<span class="badge badge-expired">No target product</span>`;
   if(!n) return `<span class="badge badge-notstarted">—</span>`;
   const label = `${PQ_STAGE_LABELS[n]} - Stage ${n}`;
-  if(n===6) return `<span class="badge badge-yes">${esc(label)}</span>`;
+  if(n===5) return `<span class="badge badge-yes">${esc(label)}</span>`;
   return `<span class="badge badge-stage">${esc(label)}</span>`;
 }
 
@@ -725,14 +732,13 @@ function renderAgFlow(){
   ]);
 }
 function renderPqFlow(){
-  const cum = n => DATA_PQ.filter(r=>r.stage!==null && r.stage>=n).length;
+  const exact = n => DATA_PQ.filter(r=>r.stage===n).length;
   renderFunnelSVG('flowSvgWrapPq', [
-    {label:'Work Started', sub:'reached', count:cum(1), done:false},
-    {label:'Study In Progress', sub:'reached', count:cum(2), done:false},
-    {label:'Matrix Done', sub:'reached', count:cum(3), done:false},
-    {label:'PQ Submitted', sub:'reached', count:cum(4), done:false},
-    {label:'Qualified', sub:'reached', count:cum(5), done:true},
-    {label:'Listed in KSA', sub:'complete', count:cum(6), done:true},
+    {label:'Work Started', sub:'in progress', count:exact(1), done:false},
+    {label:'Study In Progress', sub:'in progress', count:exact(2), done:false},
+    {label:'Matrix Done', sub:'in progress', count:exact(3), done:false},
+    {label:'PQ Submitted', sub:'in progress', count:exact(4), done:false},
+    {label:'Qualified', sub:'done', count:exact(5), done:true},
   ]);
 }
 
@@ -752,18 +758,9 @@ function computeKpisAg(){
 }
 function computeKpisPq(){
   const total = DATA_PQ.length;
-  const qualified = DATA_PQ.filter(r=>r.qualified==='Yes').length;
   const listed = DATA_PQ.filter(r=>r.shortlisted==='Yes').length;
-  const comply = DATA_PQ.filter(r=>r.compliance_status==='Comply').length;
-  const rejected = DATA_PQ.filter(r=>r.comment && /reject/i.test(r.comment)).length;
-  const onHold = DATA_PQ.filter(r=>r.compliance_status==='On Hold').length;
-  const needsAttention = rejected+onHold;
   const cards = [
-    {num: total, label:'Total products', sub: (new Set(DATA_PQ.map(r=>r.partner))).size+' unique companies', accent:'var(--cyan)'},
-    {num: comply, label:'Matrix complete', sub: 'of '+total+' tracked products', accent:'var(--cyan)'},
-    {num: qualified, label:'Qualified', sub: 'of '+total+' tracked products', accent:'var(--green)'},
-    {num: listed, label:'Listed in KSA', sub: 'final milestone reached', accent:'var(--green)'},
-    {num: needsAttention, label:'Needs attention', sub: rejected+' rejected · '+onHold+' on hold', accent:'var(--red)'},
+    {num: listed, label:'Listed in KSA', sub: 'of '+total+' tracked products', accent:'var(--green)'},
   ];
   document.getElementById('kpiStripPq').innerHTML = cards.map(c=>`
     <div class="kpi-card" style="--kpi-accent:${c.accent}"><div class="kpi-num">${c.num}</div><div class="kpi-label">${c.label}</div><div class="kpi-sub">${c.sub}</div></div>`).join('');
@@ -937,14 +934,25 @@ function getFilteredAg(){
   }
   return rows;
 }
+const PAGE_SIZE = 20;
+let pageAg = 1, pagePq = 1;
+
 function renderTableAg(){
   const rows = getFilteredAg();
   document.getElementById('registerCountAg').textContent = rows.length+' of '+DATA_AG.length+' records';
   const tbody = document.getElementById('bodyAg');
   const empty = document.getElementById('emptyAg');
+  const totalPages = Math.max(1, Math.ceil(rows.length/PAGE_SIZE));
+  if(pageAg>totalPages) pageAg = totalPages;
+  if(pageAg<1) pageAg = 1;
+  document.getElementById('pagInfoAg').textContent = pageAg+' / '+totalPages;
+  document.getElementById('pagPrevAg').disabled = pageAg<=1;
+  document.getElementById('pagNextAg').disabled = pageAg>=totalPages;
+  document.getElementById('paginationAg').style.display = rows.length===0 ? 'none' : '';
   if(rows.length===0){ tbody.innerHTML=''; empty.style.display=''; return; }
   empty.style.display='none';
-  tbody.innerHTML = rows.map(r=>`
+  const pageRows = rows.slice((pageAg-1)*PAGE_SIZE, pageAg*PAGE_SIZE);
+  tbody.innerHTML = pageRows.map(r=>`
     <tr data-row-id="${r.rowId}">
       <td><span class="sn-code">${esc(r.sr)}</span></td>
       <td class="cell-partner">${esc(r.partner)}</td>
@@ -963,19 +971,21 @@ function renderTableAg(){
     });
   });
 }
+document.getElementById('pagPrevAg').addEventListener('click', ()=>{ pageAg--; renderTableAg(); });
+document.getElementById('pagNextAg').addEventListener('click', ()=>{ pageAg++; renderTableAg(); });
 $$('#tableAg thead th').forEach(th=>{
   th.addEventListener('click', ()=>{
     const key = th.getAttribute('data-sort');
     if(sortAg.key===key) sortAg.dir *= -1; else { sortAg.key=key; sortAg.dir=1; }
-    renderTableAg();
+    pageAg = 1; renderTableAg();
   });
 });
-document.getElementById('searchAg').addEventListener('input', renderTableAg);
-['filterStageAg','filterBLAg','filterStatusAg'].forEach(id=>document.getElementById(id).addEventListener('change', renderTableAg));
+document.getElementById('searchAg').addEventListener('input', ()=>{ pageAg=1; renderTableAg(); });
+['filterStageAg','filterBLAg','filterStatusAg'].forEach(id=>document.getElementById(id).addEventListener('change', ()=>{ pageAg=1; renderTableAg(); }));
 document.getElementById('resetAg').addEventListener('click', ()=>{
   document.getElementById('searchAg').value='';
   ['filterStageAg','filterBLAg','filterStatusAg'].forEach(id=>document.getElementById(id).value='');
-  sortAg = {key:null, dir:1}; renderTableAg();
+  sortAg = {key:null, dir:1}; pageAg = 1; renderTableAg();
 });
 
 // ---------- filters/table: PQ ----------
@@ -987,7 +997,7 @@ function populateFiltersPq(){
   stSel.innerHTML = '<option value="">All stages</option>';
   blSel.innerHTML = '<option value="">All business lines</option>';
   compSel.innerHTML = '<option value="">All compliance status</option>';
-  [1,2,3,4,5,6].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=PQ_STAGE_LABELS[n]; stSel.appendChild(o); });
+  [1,2,3,4,5].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=PQ_STAGE_LABELS[n]; stSel.appendChild(o); });
   uniqueVals(DATA_PQ,'business_line').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; blSel.appendChild(o); });
   uniqueVals(DATA_PQ,'compliance_status').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; compSel.appendChild(o); });
 }
@@ -1018,9 +1028,17 @@ function renderTablePq(){
   document.getElementById('registerCountPq').textContent = rows.length+' of '+DATA_PQ.length+' records';
   const tbody = document.getElementById('bodyPq');
   const empty = document.getElementById('emptyPq');
+  const totalPages = Math.max(1, Math.ceil(rows.length/PAGE_SIZE));
+  if(pagePq>totalPages) pagePq = totalPages;
+  if(pagePq<1) pagePq = 1;
+  document.getElementById('pagInfoPq').textContent = pagePq+' / '+totalPages;
+  document.getElementById('pagPrevPq').disabled = pagePq<=1;
+  document.getElementById('pagNextPq').disabled = pagePq>=totalPages;
+  document.getElementById('paginationPq').style.display = rows.length===0 ? 'none' : '';
   if(rows.length===0){ tbody.innerHTML=''; empty.style.display=''; return; }
   empty.style.display='none';
-  tbody.innerHTML = rows.map(r=>`
+  const pageRows = rows.slice((pagePq-1)*PAGE_SIZE, pagePq*PAGE_SIZE);
+  tbody.innerHTML = pageRows.map(r=>`
     <tr data-row-id="${r.rowId}" class="${!r.target_product?'row-error':''}">
       <td><span class="sn-code">${esc(r.sr)}</span></td>
       <td class="cell-partner">${esc(r.partner)}</td>
@@ -1045,19 +1063,21 @@ function renderTablePq(){
     });
   });
 }
+document.getElementById('pagPrevPq').addEventListener('click', ()=>{ pagePq--; renderTablePq(); });
+document.getElementById('pagNextPq').addEventListener('click', ()=>{ pagePq++; renderTablePq(); });
 $$('#tablePq thead th').forEach(th=>{
   th.addEventListener('click', ()=>{
     const key = th.getAttribute('data-sort');
     if(sortPq.key===key) sortPq.dir *= -1; else { sortPq.key=key; sortPq.dir=1; }
-    renderTablePq();
+    pagePq = 1; renderTablePq();
   });
 });
-document.getElementById('searchPq').addEventListener('input', renderTablePq);
-['filterStagePq','filterBLPq','filterCompliancePq'].forEach(id=>document.getElementById(id).addEventListener('change', renderTablePq));
+document.getElementById('searchPq').addEventListener('input', ()=>{ pagePq=1; renderTablePq(); });
+['filterStagePq','filterBLPq','filterCompliancePq'].forEach(id=>document.getElementById(id).addEventListener('change', ()=>{ pagePq=1; renderTablePq(); }));
 document.getElementById('resetPq').addEventListener('click', ()=>{
   document.getElementById('searchPq').value='';
   ['filterStagePq','filterBLPq','filterCompliancePq'].forEach(id=>document.getElementById(id).value='');
-  sortPq = {key:null, dir:1}; renderTablePq();
+  sortPq = {key:null, dir:1}; pagePq = 1; renderTablePq();
 });
 
 // ---------- targets ----------
@@ -1107,7 +1127,7 @@ const stageChartInstances = new Map();
 
 function populateStageDropdown(sel){
   if(sel.dataset.populated) return;
-  [1,2,3,4,5,6].forEach(n=>{
+  [1,2,3,4,5].forEach(n=>{
     const o = document.createElement('option');
     o.value = n;
     o.textContent = 'Stage '+n+' · '+PQ_STAGE_LABELS[n];
@@ -1130,7 +1150,7 @@ function renderStageChart(canvasId, dropdownId, rows, year, showCatalogReference
 
   if(!selectedStage){
     // All 6 stages, stacked. Any stage with no date data anywhere just comes out flat at 0 — no special-casing needed.
-    const stageSeries = [1,2,3,4,5,6].map(n=>{
+    const stageSeries = [1,2,3,4,5].map(n=>{
       const field = PQ_STAGE_DATE_FIELD[n];
       const dates = rows.filter(r=>r.stage!==null && r.stage>=n).map(r=>parseSheetDate(r[field]));
       const weekly = cumulativeWeeklyCounts(dates, year);
