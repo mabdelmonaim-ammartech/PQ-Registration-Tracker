@@ -107,7 +107,7 @@ h1{font-family:var(--font-display); font-size:20px; font-weight:600; margin:0; l
 
 .table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px;}
 table{width:100%; border-collapse:collapse; min-width:1000px;}
-thead th{text-align:left; font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); padding:11px 14px; background:var(--bg-panel-raised); border-bottom:1px solid var(--line); cursor:pointer; white-space:nowrap; user-select:none; font-weight:600;}
+thead th{text-align:center; font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); padding:11px 14px; background:var(--bg-panel-raised); border-bottom:1px solid var(--line); cursor:pointer; white-space:nowrap; user-select:none; font-weight:600;}
 thead th:hover{color:var(--cyan);}
 tbody td{padding:11px 14px; border-bottom:1px solid var(--line); font-size:13.5px; vertical-align:middle;}
 tbody tr{cursor:pointer; transition:background .1s;}
@@ -306,11 +306,11 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
       <div class="table-wrap" id="tableWrapAg">
         <table id="tableAg">
           <thead><tr>
-            <th data-sort="sr">Agreement SN</th>
+            <th data-sort="sr" style="width:120px;">Agreement SN</th>
             <th data-sort="partner">Partner</th>
-            <th data-sort="products">Products</th>
+            <th data-sort="products" style="width:120px;">Products</th>
             <th data-sort="business_line">Line</th>
-            <th data-sort="stage">Stage</th>
+            <th data-sort="stage" style="width:120px;">Stage</th>
             <th data-sort="agreement_status">Agreement</th>
             <th data-sort="remaining_days">Expiry</th>
             <th data-sort="se_reg_status">SE reg.</th>
