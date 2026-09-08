@@ -144,6 +144,11 @@ tbody tr:last-child td{border-bottom:none;}
 .pag-btn:disabled{color:var(--text-dim); cursor:default; opacity:0.5;}
 .pag-info{font-family:var(--font-mono); font-size:12.5px; color:var(--text-muted); min-width:60px; text-align:center;}
 
+tbody.pg-anim-next{ animation: pgSlideNext .28s ease; }
+tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
+@keyframes pgSlideNext{ from{opacity:0; transform:translateX(16px);} to{opacity:1; transform:translateX(0);} }
+@keyframes pgSlidePrev{ from{opacity:0; transform:translateX(-16px);} to{opacity:1; transform:translateX(0);} }
+
 .dq-subhead{font-family:var(--font-display); font-size:13.5px; font-weight:600; color:var(--text); margin-bottom:12px;}
 .dq-list{display:flex; flex-direction:column; gap:8px;}
 .dq-item{display:flex; align-items:center; gap:14px; background:var(--bg-panel-raised); border:1px solid var(--line); border-radius:8px; padding:10px 14px; cursor:pointer; transition:border-color .15s; flex-wrap:wrap;}
@@ -244,7 +249,7 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v29 · 08 Sep 2026, 10:59</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v30 · 08 Sep 2026, 11:12</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -937,7 +942,19 @@ function getFilteredAg(){
 const PAGE_SIZE = 20;
 let pageAg = 1, pagePq = 1;
 
-function renderTableAg(){
+// Keeps the pagination controls in view after a re-render (prevents the page jumping when
+// table height changes between pages) and plays a directional slide-in on the new rows.
+function afterPageChange(paginationId, tbody, direction){
+  if(direction){
+    tbody.classList.remove('pg-anim-next','pg-anim-prev');
+    void tbody.offsetWidth; // restart animation
+    tbody.classList.add(direction==='next' ? 'pg-anim-next' : 'pg-anim-prev');
+  }
+  const el = document.getElementById(paginationId);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function renderTableAg(direction){
   const rows = getFilteredAg();
   document.getElementById('registerCountAg').textContent = rows.length+' of '+DATA_AG.length+' records';
   const tbody = document.getElementById('bodyAg');
@@ -970,9 +987,10 @@ function renderTableAg(){
       if(row) openDrawer(row, 'ag');
     });
   });
+  afterPageChange('paginationAg', tbody, direction);
 }
-document.getElementById('pagPrevAg').addEventListener('click', ()=>{ pageAg--; renderTableAg(); });
-document.getElementById('pagNextAg').addEventListener('click', ()=>{ pageAg++; renderTableAg(); });
+document.getElementById('pagPrevAg').addEventListener('click', ()=>{ pageAg--; renderTableAg('prev'); });
+document.getElementById('pagNextAg').addEventListener('click', ()=>{ pageAg++; renderTableAg('next'); });
 $$('#tableAg thead th').forEach(th=>{
   th.addEventListener('click', ()=>{
     const key = th.getAttribute('data-sort');
@@ -1023,7 +1041,7 @@ function getFilteredPq(){
   }
   return rows;
 }
-function renderTablePq(){
+function renderTablePq(direction){
   const rows = getFilteredPq();
   document.getElementById('registerCountPq').textContent = rows.length+' of '+DATA_PQ.length+' records';
   const tbody = document.getElementById('bodyPq');
@@ -1062,9 +1080,10 @@ function renderTablePq(){
       openAgreementBySN(link.getAttribute('data-agsn'));
     });
   });
+  afterPageChange('paginationPq', tbody, direction);
 }
-document.getElementById('pagPrevPq').addEventListener('click', ()=>{ pagePq--; renderTablePq(); });
-document.getElementById('pagNextPq').addEventListener('click', ()=>{ pagePq++; renderTablePq(); });
+document.getElementById('pagPrevPq').addEventListener('click', ()=>{ pagePq--; renderTablePq('prev'); });
+document.getElementById('pagNextPq').addEventListener('click', ()=>{ pagePq++; renderTablePq('next'); });
 $$('#tablePq thead th').forEach(th=>{
   th.addEventListener('click', ()=>{
     const key = th.getAttribute('data-sort');
