@@ -754,9 +754,9 @@ function computeKpisAg(){
   const seRegistered = DATA_AG.filter(r=>r.se_reg_status==='Registered').length;
   const ngRegistered = DATA_AG.filter(r=>r.ng_reg_status==='Registered').length;
   const cards = [
-    {num: signedDone, label:'Agreements done', sub: 'of '+total+' total agreements', accent:'var(--green)'},
-    {num: seRegistered, label:'SE registered', sub: 'of '+total+' total agreements', accent:'var(--green)'},
-    {num: ngRegistered, label:'NG registered', sub: 'of '+total+' total agreements', accent:'var(--green)'},
+    {num: signedDone, label:'Agreements done', sub: 'of '+total+' Tasks', accent:'var(--green)'},
+    {num: seRegistered, label:'SE registered', sub: 'of '+total+' Tasks', accent:'var(--green)'},
+    {num: ngRegistered, label:'NG registered', sub: 'of '+total+' Tasks', accent:'var(--green)'},
   ];
   document.getElementById('kpiStripAg').innerHTML = cards.map(c=>`
     <div class="kpi-card" style="--kpi-accent:${c.accent}"><div class="kpi-num">${c.num}</div><div class="kpi-label">${c.label}</div><div class="kpi-sub">${c.sub}</div></div>`).join('');
