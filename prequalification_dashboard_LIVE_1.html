@@ -86,7 +86,7 @@ h1{font-family:var(--font-display); font-size:20px; font-weight:600; margin:0; l
 .flow-node-circle.done{stroke:var(--green); filter:drop-shadow(0 0 6px rgba(31,157,101,0.5));}
 .flow-node-count.done{fill:var(--green);}
 
-.kpi-strip{display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-top:22px;}
+.kpi-strip{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:14px; margin-top:22px;}
 .kpi-card{background:var(--bg-panel); border:1px solid var(--line); border-radius:12px; padding:16px 16px 14px; position:relative; overflow:hidden;}
 .kpi-card::before{content:''; position:absolute; top:0; left:0; width:100%; height:2px; background:var(--kpi-accent, var(--cyan));}
 .kpi-num{font-family:var(--font-display); font-size:28px; font-weight:700; line-height:1;}
@@ -241,7 +241,7 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v25 · 08 Sep 2026, 09:38</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v27 · 08 Sep 2026, 10:24</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -457,7 +457,7 @@ const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
 const esc = (s) => (s===null||s===undefined) ? '' : String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm = (s) => (s||'').replace(/\s+/g,' ').trim();
 
-const AG_STAGE_LABELS = {1:'Study', 2:'Agreement in Negotiation', 3:'Agreement Signed', 4:'SE Registration in Progress', 5:'SE Registered', 6:'NG Registration in Progress', 7:'NG Registered'};
+const AG_STAGE_LABELS = {1:'Study', 2:'Agreement Negotiation', 3:'SE Registration', 4:'NG Registration', 5:'Registered'};
 const PQ_STAGE_LABELS = {1:'Work Started', 2:'Study In Progress', 3:'Compliance Matrix Done', 4:'PQ Submitted', 5:'Qualified', 6:'Listed in KSA'};
 const PQ_STAGE_DATE_FIELD = {1:'work_started_date', 2:'study_in_progress_date', 3:'documents_ready_date', 4:'pq_submit_date', 5:'qualified_date', 6:'listed_date'};
 const PQ_STAGE_COLORS = {1:'#6FB3DE', 2:'#1E88C7', 3:'#8354C4', 4:'#D98A15', 5:'#1F9D65', 6:'#0F6E3F'};
@@ -525,13 +525,21 @@ function makeGetter(row){
 
 function computeAgStage(r){
   if(r.agreement_status==='On Hold') return null; // excluded from funnel, shown separately in alerts
-  if(r.ng_reg_status==='Registered') return 7;
-  if(r.ng_reg_status==='In Progress') return 6;
-  if(r.se_reg_status==='Registered') return 5;
-  if(r.se_reg_status==='In Progress') return 4;
-  if(r.agreement_status==='Signed') return 3;
+  const ngRelevant = r.business_line==='National Grid (NG)' || r.business_line==='Both';
+
+  // Registered (final): SE-only companies need SE done; NG/Both companies need NG done
+  const registeredDone = ngRelevant ? (r.ng_reg_status==='Registered') : (r.se_reg_status==='Registered');
+  if(registeredDone) return 5;
+
+  // NG Registration: NG-relevant, already SE-registered, not yet NG-registered (covers both "actively in progress" and "eligible but not started" — see sub-label)
+  if(ngRelevant && r.se_reg_status==='Registered') return 4;
+
+  // SE Registration: actively pursuing SE registration, or already signed and SE registration not yet complete
+  if(r.se_reg_status==='In Progress' || r.agreement_status==='Signed') return 3;
+
   if(r.agreement_status==='In Negotiation') return 2;
-  return 1;
+
+  return 1; // Not Started / default
 }
 function computePqStage(r){
   if(!r.target_product) return null; // no target product = data-entry error, excluded from funnel entirely
@@ -635,7 +643,7 @@ function expiryBadge(row){
 function agStageBadge(n, status){
   if(status==='On Hold') return `<span class="badge badge-onhold">On hold</span>`;
   if(!n) return `<span class="badge badge-notstarted">—</span>`;
-  if(n===5 || n===7) return `<span class="badge badge-yes">${esc(AG_STAGE_LABELS[n])}</span>`;
+  if(n===5) return `<span class="badge badge-yes">${esc(AG_STAGE_LABELS[n])}</span>`;
   return `<span class="badge badge-stage">${esc(AG_STAGE_LABELS[n]||'')}</span>`;
 }
 function pqStageBadge(n, hasTargetProduct){
@@ -705,16 +713,15 @@ function renderFunnelSVG(containerId, stages){
   document.getElementById(containerId).innerHTML = svg;
 }
 function renderAgFlow(){
-  const stages = DATA_AG.map(r=>r.stage);
-  const cum = n => stages.filter(s=>s!==null && s>=n).length;
+  const exact = n => DATA_AG.filter(r=>r.stage===n).length;
+  const ngBucket = exact(4); // = companies that need NG registration and have already finished SE (the X denominator)
+  const ngInProgress = DATA_AG.filter(r=>r.stage===4 && r.ng_reg_status==='In Progress').length;
   renderFunnelSVG('flowSvgWrapAg', [
-    {label:'Study', sub:'reached', count:cum(1), done:false},
-    {label:'Negotiation', sub:'reached', count:cum(2), done:false},
-    {label:'Signed', sub:'reached', count:cum(3), done:false},
-    {label:'SE Reg. Progress', sub:'reached', count:cum(4), done:false},
-    {label:'SE Registered', sub:'reached', count:cum(5), done:true},
-    {label:'NG Reg. Progress', sub:'reached', count:cum(6), done:false},
-    {label:'NG Registered', sub:'reached', count:cum(7), done:true},
+    {label:'Study', sub:'in progress', count:exact(1), done:false},
+    {label:'Agreement Negotiation', sub:'in progress', count:exact(2), done:false},
+    {label:'SE Registration', sub:'in progress', count:exact(3), done:false},
+    {label:'NG Registration', sub:ngInProgress+'/'+ngBucket+' in progress', count:ngBucket, done:false},
+    {label:'Registered', sub:'done', count:exact(5), done:true},
   ]);
 }
 function renderPqFlow(){
@@ -732,18 +739,13 @@ function renderPqFlow(){
 // ---------- KPIs ----------
 function computeKpisAg(){
   const total = DATA_AG.length;
-  const cum = n => DATA_AG.filter(r=>r.stage!==null && r.stage>=n).length;
-  const negotiatingNow = DATA_AG.filter(r=>r.stage===2).length;
-  const expiringSoon = DATA_AG.filter(r=>!r.expired && r.remaining_days!==null && r.remaining_days<=180).length;
-  const expiredCount = DATA_AG.filter(r=>r.expired).length;
-  const onHold = DATA_AG.filter(r=>r.agreement_status==='On Hold').length;
-  const needsAttention = expiringSoon+expiredCount+onHold;
+  const signedDone = DATA_AG.filter(r=>r.agreement_status==='Signed').length;
+  const seRegistered = DATA_AG.filter(r=>r.se_reg_status==='Registered').length;
+  const ngRegistered = DATA_AG.filter(r=>r.ng_reg_status==='Registered').length;
   const cards = [
-    {num: total, label:'Total agreements', sub: (new Set(DATA_AG.map(r=>r.partner))).size+' unique companies', accent:'var(--cyan)'},
-    {num: cum(3), label:'Signed (Stage 3+)', sub: negotiatingNow+' currently negotiating', accent:'var(--green)'},
-    {num: cum(5), label:'SE registered (Stage 5+)', sub: (total-cum(5))+' pending', accent:'var(--cyan)'},
-    {num: cum(7), label:'NG registered (Stage 7)', sub: (total-cum(7))+' pending', accent:'var(--cyan)'},
-    {num: needsAttention, label:'Needs attention', sub: expiredCount+' expired · '+expiringSoon+' expiring · '+onHold+' on hold', accent:'var(--red)'},
+    {num: signedDone, label:'Agreements done', sub: 'of '+total+' total agreements', accent:'var(--green)'},
+    {num: seRegistered, label:'SE registered', sub: 'of '+total+' total agreements', accent:'var(--green)'},
+    {num: ngRegistered, label:'NG registered', sub: 'of '+total+' total agreements', accent:'var(--green)'},
   ];
   document.getElementById('kpiStripAg').innerHTML = cards.map(c=>`
     <div class="kpi-card" style="--kpi-accent:${c.accent}"><div class="kpi-num">${c.num}</div><div class="kpi-label">${c.label}</div><div class="kpi-sub">${c.sub}</div></div>`).join('');
@@ -909,7 +911,7 @@ function populateFiltersAg(){
   stSel.innerHTML = '<option value="">All stages</option>';
   blSel.innerHTML = '<option value="">All business lines</option>';
   statusSel.innerHTML = '<option value="">All statuses</option>';
-  [1,2,3,4,5,6,7].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=AG_STAGE_LABELS[n]; stSel.appendChild(o); });
+  [1,2,3,4,5].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=AG_STAGE_LABELS[n]; stSel.appendChild(o); });
   uniqueVals(DATA_AG,'business_line').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; blSel.appendChild(o); });
   uniqueVals(DATA_AG,'agreement_status').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; statusSel.appendChild(o); });
 }
@@ -1194,7 +1196,7 @@ function renderTargets(){
   const TARGET = 10;
 
   // ---- company agreement target ----
-  const signedDates = DATA_AG.filter(r=>r.agreement_status==='Signed').map(r=>parseSheetDate(r.agreement_start));
+  const signedDates = DATA_AG.filter(r=>r.stage!==null && r.stage>=3).map(r=>parseSheetDate(r.agreement_start));
   const companyCum = cumulativeMonthlyCounts(signedDates, year);
   const companyTotal = companyCum[companyCum.length-1];
   const companyTarget = new Array(12).fill(TARGET);
