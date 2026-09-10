@@ -105,7 +105,8 @@ h1{font-family:var(--font-display); font-size:20px; font-weight:600; margin:0; l
 .toolbar input{flex:1; min-width:200px;}
 .toolbar input:focus, .toolbar select:focus{border-color:var(--cyan-dim);}
 
-.table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px;}
+.table-wrap{overflow:auto; border:1px solid var(--line); border-radius:10px; max-height:960px;}
+thead{position:sticky; top:0; z-index:1;}
 table{width:100%; border-collapse:collapse; min-width:1000px;}
 thead th{text-align:center; font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); padding:11px 14px; background:var(--bg-panel-raised); border-bottom:1px solid var(--line); cursor:pointer; white-space:nowrap; user-select:none; font-weight:600;}
 thead th:hover{color:var(--cyan);}
@@ -254,7 +255,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v33 · 10 Sep 2026, 09:17</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v35 · 10 Sep 2026, 10:01</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -974,20 +975,15 @@ let pageAg = 1, pagePq = 1;
 // table height changes between pages) and plays a directional slide-in on the new rows.
 // Also locks the table's height at the tallest page seen so far, so a shorter last page
 // (fewer than 20 rows) just leaves blank space instead of shrinking the whole layout.
+// Plays a directional slide-in on the new rows when paging. The table's fixed max-height (CSS)
+// means the container never resizes, so there's nothing to compensate for anymore — no forced
+// scrolling needed, on page-turns or on search/filter typing.
 function afterPageChange(wrapId, paginationId, tbody, direction){
-  const wrap = document.getElementById(wrapId);
-  if(wrap){
-    const natural = wrap.scrollHeight;
-    const current = parseFloat(wrap.style.minHeight) || 0;
-    if(natural > current) wrap.style.minHeight = natural+'px';
-  }
   if(direction){
     tbody.classList.remove('pg-anim-next','pg-anim-prev');
     void tbody.offsetWidth; // restart animation
     tbody.classList.add(direction==='next' ? 'pg-anim-next' : 'pg-anim-prev');
   }
-  const el = document.getElementById(paginationId);
-  if(el) el.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
 function renderTableAg(direction){
