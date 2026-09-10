@@ -199,6 +199,11 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .foot-note{margin-top:30px; padding:16px 4px 4px; border-top:1px solid var(--line);}
 .foot-note p{font-size:11.5px; color:var(--text-dim); line-height:1.6; max-width:920px;}
 
+.target-section-title{
+  font-family:var(--font-display); font-size:18px; font-weight:700; color:var(--text);
+  margin:32px 0 4px; padding-bottom:8px; border-bottom:2px solid var(--cyan-dim);
+}
+.target-section-title:first-child{margin-top:0;}
 .target-headline{display:flex; align-items:baseline; gap:10px; margin-bottom:18px;}
 .target-headline .t-num{font-family:var(--font-display); font-size:34px; font-weight:700; color:var(--cyan);}
 .target-headline .t-of{font-family:var(--font-mono); font-size:15px; color:var(--text-muted);}
@@ -249,7 +254,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v31 · 08 Sep 2026, 11:20</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v33 · 10 Sep 2026, 09:17</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -404,6 +409,9 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 
   <!-- ============ TARGETS PAGE ============ -->
   <div id="pageTg" class="page" style="display:none;">
+
+    <h2 class="target-section-title">Agreements &amp; Registration</h2>
+
     <section class="panel">
       <div class="panel-head">
         <h2>Company agreement target</h2>
@@ -412,6 +420,16 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
       <div class="target-headline" id="tgCompanyHeadline"></div>
       <div class="chart-wrap"><canvas id="chartCompany"></canvas></div>
     </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Engineer registration targets</h2>
+        <span class="panel-sub">Agreements reaching Registered this year, per engineer, week by week</span>
+      </div>
+      <div class="engineer-grid" id="engineerGridAg"></div>
+    </section>
+
+    <h2 class="target-section-title">PQ Follow Up</h2>
 
     <section class="panel">
       <div class="panel-head">
@@ -524,10 +542,11 @@ function blank(v){
   return !s || s==='____' || /^n\/?a$/i.test(s) ? '' : s;
 }
 function normBL(v){
-  const s = blank(v).toUpperCase().replace(/\.$/,'');
+  let s = blank(v).toUpperCase().replace(/\./g,'').replace(/\s+/g,' ').trim();
   if(s==='NG') return 'National Grid (NG)';
   if(s==='DIST') return 'Distribution (SE)';
-  if(s==='BOTH') return 'Both';
+  if(s==='NONE') return 'None';
+  if(s==='NG & DIST' || s==='NG AND DIST' || s==='NG&DIST' || s==='BOTH') return 'NG & Distribution (SE)';
   return blank(v) || null;
 }
 function makeGetter(row){
@@ -538,11 +557,14 @@ function makeGetter(row){
 
 function computeAgStage(r){
   if(r.agreement_status==='On Hold') return null; // excluded from funnel, shown separately in alerts
-  const ngRelevant = r.business_line==='National Grid (NG)' || r.business_line==='Both';
+  const ngRelevant = r.business_line==='National Grid (NG)' || r.business_line==='NG & Distribution (SE)';
 
   // Registered (final): SE-only companies need SE done; NG/Both companies need NG done
   const registeredDone = ngRelevant ? (r.ng_reg_status==='Registered') : (r.se_reg_status==='Registered');
   if(registeredDone) return 5;
+
+  // Signed with neither SE nor NG registration actually required — nothing left to do, straight to Registered
+  if(r.agreement_status==='Signed' && r.se_reg_status==='Not Needed' && r.ng_reg_status==='Not Needed') return 5;
 
   // NG Registration: NG-relevant, already SE-registered, not yet NG-registered (covers both "actively in progress" and "eligible but not started" — see sub-label)
   if(ngRelevant && r.se_reg_status==='Registered') return 4;
@@ -574,6 +596,8 @@ function mapAgRow(row, i){
     sr: g('Agreement SN.') || ('ROW'+(i+1)),
     rowId: i,
     partner: g('Partner'),
+    country: g('Country'),
+    responsible: g('Responsible Person'),
     products: g('Products in Agreemnet'),
     business_line: normBL(g('Business Line')),
     legal_revision: g('Legal Revision of Agreement Status'),
@@ -644,6 +668,7 @@ function yesNoBadge(v){
 function regStatusBadge(status){
   if(status==='Registered') return `<span class="badge badge-yes">Registered</span>`;
   if(status==='In Progress') return `<span class="badge badge-negotiation">In progress</span>`;
+  if(status==='Not Needed') return `<span class="badge badge-stage">Not needed</span>`;
   return `<span class="badge badge-no">Not registered</span>`;
 }
 function expiryBadge(row){
@@ -726,13 +751,12 @@ function renderFunnelSVG(containerId, stages){
 }
 function renderAgFlow(){
   const exact = n => DATA_AG.filter(r=>r.stage===n).length;
-  const ngBucket = exact(4); // = companies that need NG registration and have already finished SE (the X denominator)
-  const ngInProgress = DATA_AG.filter(r=>r.stage===4 && r.ng_reg_status==='In Progress').length;
+  const ngBucket = exact(4); // = companies that need NG registration and have already finished SE
   renderFunnelSVG('flowSvgWrapAg', [
     {label:'Study', sub:'in progress', count:exact(1), done:false},
     {label:'Agreement Negotiation', sub:'in progress', count:exact(2), done:false},
     {label:'SE Registration', sub:'in progress', count:exact(3), done:false},
-    {label:'NG Registration', sub:+ngBucket+' pending to start', count:ngBucket, done:false},
+    {label:'NG Registration', sub:ngBucket+' pending to start', count:ngBucket, done:false},
     {label:'Registered', sub:'done', count:exact(5), done:true},
   ]);
 }
@@ -776,7 +800,7 @@ function computeNotifications(){
   const agBySN = new Map(DATA_AG.map(r=>[r.sr, r]));
   const notifications = [];
   DATA_PQ.forEach(r=>{
-    if(r.qualified==='Yes' && (r.business_line==='National Grid (NG)' || r.business_line==='Both')){
+    if(r.qualified==='Yes' && (r.business_line==='National Grid (NG)' || r.business_line==='NG & Distribution (SE)')){
       const ag = agBySN.get(r.agreement_sn);
       if(!ag || ag.ng_reg_status!=='Registered'){
         notifications.push({rule:'Start NG registration', message:'Qualified in SE and listed under NG/Both, but NG registration has not started.', pqRow:r, agRow:ag||null});
@@ -858,6 +882,10 @@ function computeDqAg(){
       errors.push({rule:'Business line', message:'Business Line is not specified.', row:r});
     if((r.ng_reg_status==='In Progress' || r.ng_reg_status==='Registered') && r.se_reg_status!=='Registered')
       errors.push({rule:'NG before SE', message:'NG registration is '+r.ng_reg_status+' but SE registration is not yet Registered — NG registration requires SE to be completed first.', row:r});
+    if(r.business_line==='None' && (r.se_reg_status!=='Not Needed' || r.ng_reg_status!=='Not Needed'))
+      errors.push({rule:'Business line consistency', message:'Business Line is None, so both SE and NG Registration Status should be Not Needed.', row:r});
+    if(r.business_line==='Distribution (SE)' && r.ng_reg_status!=='Not Needed')
+      errors.push({rule:'Business line consistency', message:'Business Line is Distribution (SE) only, so NG Registration Status should be Not Needed.', row:r});
   });
   return errors;
 }
@@ -1238,6 +1266,54 @@ document.getElementById('filterStageWeekly').addEventListener('change', ()=>{
   renderStageChart('chartWeeklyProgress', 'filterStageWeekly', DATA_PQ, new Date().getFullYear(), true);
 });
 
+// Per-engineer weekly cumulative count of agreements reaching Registered (stage 5) this year.
+// Uses whichever registration date actually applies to that agreement (NG date if NG-relevant,
+// otherwise SE date); falls back to the agreement's start date for the rare case where an
+// agreement was auto-promoted straight to Registered (Business Line = None, both regs Not Needed).
+function renderEngineerAgTargets(year){
+  const engineers = Array.from(new Set(DATA_AG.map(r=>r.responsible).filter(Boolean))).sort();
+  const grid = document.getElementById('engineerGridAg');
+  grid.innerHTML = engineers.map((eng,idx)=>`
+    <div class="engineer-card">
+      <div class="e-name">${esc(eng)}</div>
+      <div class="e-progress">
+        <span class="e-num" id="eAgNum${idx}">0</span><span class="e-of">registered this year</span>
+      </div>
+      <div class="engineer-chart-wrap"><canvas id="eAgChart${idx}"></canvas></div>
+    </div>`).join('');
+
+  engineers.forEach((eng, idx)=>{
+    const registeredRows = DATA_AG.filter(r=>r.responsible===eng && r.stage===5);
+    const ngRelevant = r => r.business_line==='National Grid (NG)' || r.business_line==='NG & Distribution (SE)';
+    const dates = registeredRows.map(r=>{
+      const dateStr = ngRelevant(r) ? r.ng_registered_date : r.se_registered_date;
+      return parseSheetDate(dateStr) || parseSheetDate(r.agreement_start);
+    });
+    const cum = cumulativeWeeklyCounts(dates, year);
+    const dummyTarget = new Array(cum.length).fill(0);
+    const view = truncateToNow(WEEK_LABELS, cum, dummyTarget, year, 'week');
+
+    document.getElementById('eAgNum'+idx).textContent = registeredRows.length;
+
+    const canvasId = 'eAgChart'+idx;
+    if(stageChartInstances.has(canvasId)) stageChartInstances.get(canvasId).destroy();
+    stageChartInstances.set(canvasId, new Chart(document.getElementById(canvasId), {
+      type:'line',
+      data:{
+        labels: view.labels,
+        datasets:[
+          { label:'Registered (cumulative)', data:view.data, borderColor:'#1F9D65', backgroundColor:'rgba(31,157,101,0.1)', fill:true, tension:0.25, pointRadius:2 },
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{ y:{ beginAtZero:true, ticks:{precision:0, font:{size:9}} }, x:{ ticks:{font:{size:8}, autoSkip:true, maxTicksLimit:13} } },
+        plugins:{ legend:{ display:false } }
+      }
+    }));
+  });
+}
+
 function renderTargets(){
   const year = new Date().getFullYear();
   const TARGET = 10;
@@ -1269,6 +1345,9 @@ function renderTargets(){
       plugins:{ legend:{ position:'bottom', labels:{ font:{family:'IBM Plex Mono', size:11} } } }
     }
   });
+
+  // ---- engineer registration targets (Agreements page) ----
+  renderEngineerAgTargets(year);
 
   // ---- weekly PQ stage distribution ----
   renderStageChart('chartWeeklyProgress', 'filterStageWeekly', DATA_PQ, year, true);
@@ -1357,6 +1436,8 @@ function openDrawer(r, page){
         <div class="d-row"><span class="d-k">Status</span><span class="d-v">${agreementBadge(r.agreement_status)}</span></div>
         <div class="d-row"><span class="d-k">Legal revision</span><span class="d-v">${esc(r.legal_revision||'—')}</span></div>
         <div class="d-row"><span class="d-k">Agreement type</span><span class="d-v">${esc(r.agreement_type||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Country of origin</span><span class="d-v">${esc(r.country||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Responsible</span><span class="d-v">${esc(r.responsible||'—')}</span></div>
         <div class="d-row"><span class="d-k">Start date</span><span class="d-v">${esc(r.agreement_start||'—')}</span></div>
         <div class="d-row"><span class="d-k">End date</span><span class="d-v">${esc(r.agreement_end||'—')}</span></div>
         <div class="d-row"><span class="d-k">Remaining</span><span class="d-v">${expiryBadge(r)}</span></div>
@@ -1383,12 +1464,14 @@ function openDrawer(r, page){
       </div>
     `;
   } else {
+    const linkedAg = DATA_AG.find(a=>a.sr===r.agreement_sn);
     body = `
       <div class="d-section">
         <div class="d-section-title">Product</div>
         <div class="d-row"><span class="d-k">Stage</span><span class="d-v">${pqStageBadge(r.stage, !!r.target_product)}</span></div>
         <div class="d-row"><span class="d-k">Product</span><span class="d-v">${esc(r.product||'—')}</span></div>
         <div class="d-row"><span class="d-k">Target product</span><span class="d-v">${esc(r.target_product||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Country of origin</span><span class="d-v">${esc((linkedAg&&linkedAg.country)||'—')}</span></div>
         <div class="d-row"><span class="d-k">Agreement</span><span class="d-v"><span class="sn-code sn-link" id="drawerAgLink">${esc(r.agreement_sn||'—')}</span></span></div>
         <div class="d-row"><span class="d-k">Responsible</span><span class="d-v">${esc(r.responsible||'—')}</span></div>
         <div class="d-row"><span class="d-k">Needs PQ?</span><span class="d-v">${yesNoBadge(r.need_pq)}</span></div>
