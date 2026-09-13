@@ -255,7 +255,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v35 · 10 Sep 2026, 10:01</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v36 · 13 Sep 2026, 09:15</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -372,7 +372,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
         <input type="text" id="searchPq" placeholder="Search PQ SN, partner, product..." />
         <select id="filterStagePq"><option value="">All stages</option></select>
         <select id="filterBLPq"><option value="">All business lines</option></select>
-        <select id="filterCompliancePq"><option value="">All Compliance Matrix Status</option></select>
+        <select id="filterCompliancePq"><option value="">All compliance status</option></select>
         <button class="btn-ghost small" id="resetPq">Reset</button>
       </div>
       <div class="table-wrap" id="tableWrapPq">
@@ -459,7 +459,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
   </div>
 
   <footer class="foot-note">
-    <p>Live view of two linked Google Sheet tabs — Agreements &amp; Registration and PQ Follow Up, joined by Agreement SN. Stage logic: company stage combines Agreement Status with SE/NG registration progress; product stage is cumulative across Compliance Matrix Status, PQ Submit Date, Qualified, Waiting Factory Visit/Sample Status and Shortlisted.</p>
+    <p>Live view of two linked Google Sheet tabs — Agreements &amp; Registration and PQ Follow Up, joined by Agreement SN. Stage logic: company stage combines Agreement Status with SE/NG registration progress; product stage is cumulative across Compliance Status, PQ Submit Date, Qualified, Waiting Factory Visit/Sample Status and Shortlisted.</p>
   </footer>
 
 </main>
@@ -493,6 +493,19 @@ const AG_STAGE_LABELS = {1:'Study', 2:'Agreement Negotiation', 3:'SE Registratio
 const PQ_STAGE_LABELS = {1:'Work Started', 2:'Study In Progress', 3:'Compliance Matrix Done', 4:'PQ Submitted', 5:'Qualified'};
 const PQ_STAGE_DATE_FIELD = {1:'work_started_date', 2:'study_in_progress_date', 3:'documents_ready_date', 4:'pq_submit_date', 5:'qualified_date'};
 const PQ_STAGE_COLORS = {1:'#6FB3DE', 2:'#1E88C7', 3:'#8354C4', 4:'#D98A15', 5:'#1F9D65'};
+
+// Targets-page tracking is intentionally narrower than the main PQ funnel above — Work Started
+// and Study In Progress aren't tracked here, only the three milestones that matter for reporting.
+const CHART_STAGE_LABELS = {1:'Compliance Matrix Done', 2:'PQ Submitted', 3:'Qualified'};
+const CHART_STAGE_COLORS = {1:'#8354C4', 2:'#D98A15', 3:'#1F9D65'};
+// Exclusive bucket assignment (highest-priority-wins, same pattern as the rest of the dashboard):
+// a row lands in exactly one of these three buckets, dated by that bucket's own date column.
+function chartBucketFor(r){
+  if(r.qualified==='Yes') return { n:3, date:r.qualified_date };
+  if(r.pq_submit_date) return { n:2, date:r.pq_submit_date };
+  if(r.compliance_status==='Comply') return { n:1, date:r.compliance_matrix_done_date };
+  return null;
+}
 const MONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
 
 let DATA_AG = [];
@@ -633,6 +646,7 @@ function mapPqRow(row, i){
     need_pq: g('Need PQ?'),
     target_product: g('Target Product'),
     compliance_status: g('Compliance Matrix Status'),
+    compliance_matrix_done_date: g('Compliance Matrix Done Date'),
     business_line: normBL(g('Business Line')),
     documents_ready_date: g('Documents Ready Date'),
     work_started_date: g('Work Started Date'),
@@ -1046,7 +1060,7 @@ function populateFiltersPq(){
   const compSel = document.getElementById('filterCompliancePq');
   stSel.innerHTML = '<option value="">All stages</option>';
   blSel.innerHTML = '<option value="">All business lines</option>';
-  compSel.innerHTML = '<option value="">All Compliance Matrix Status</option>';
+  compSel.innerHTML = '<option value="">All compliance status</option>';
   [1,2,3,4,5].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=PQ_STAGE_LABELS[n]; stSel.appendChild(o); });
   uniqueVals(DATA_PQ,'business_line').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; blSel.appendChild(o); });
   uniqueVals(DATA_PQ,'compliance_status').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; compSel.appendChild(o); });
@@ -1178,10 +1192,10 @@ const stageChartInstances = new Map();
 
 function populateStageDropdown(sel){
   if(sel.dataset.populated) return;
-  [1,2,3,4,5].forEach(n=>{
+  [1,2,3].forEach(n=>{
     const o = document.createElement('option');
     o.value = n;
-    o.textContent = 'Stage '+n+' · '+PQ_STAGE_LABELS[n];
+    o.textContent = CHART_STAGE_LABELS[n];
     sel.appendChild(o);
   });
   sel.dataset.populated = '1';
@@ -1189,8 +1203,10 @@ function populateStageDropdown(sel){
 
 const TARGET_CATALOG_SIZE = 248;
 
-// Generic stage-distribution chart. `rows` = the PQ rows in scope (all of DATA_PQ for company-wide, or one engineer's rows).
-// `showCatalogReference` = true only for the company-wide chart (248 target catalog backdrop) — doesn't apply to a single engineer.
+// Tracks only Compliance Matrix Done, PQ Submitted, and Qualified — each row lands in exactly one
+// bucket (highest reached), dated by that bucket's own date column. `rows` = PQ rows in scope
+// (all of DATA_PQ for company-wide, or one engineer's rows). `showCatalogReference` = true only
+// for the company-wide chart (248 target catalog backdrop) — doesn't apply to a single engineer.
 function renderStageChart(canvasId, dropdownId, rows, year, showCatalogReference){
   const dropdown = document.getElementById(dropdownId);
   populateStageDropdown(dropdown);
@@ -1199,11 +1215,12 @@ function renderStageChart(canvasId, dropdownId, rows, year, showCatalogReference
   if(stageChartInstances.has(canvasId)) stageChartInstances.get(canvasId).destroy();
   const ctx = document.getElementById(canvasId);
 
+  // pre-compute each row's bucket once
+  const bucketed = rows.map(r=>({ r, b: chartBucketFor(r) })).filter(x=>x.b);
+
   if(!selectedStage){
-    // All 6 stages, stacked. Any stage with no date data anywhere just comes out flat at 0 — no special-casing needed.
-    const stageSeries = [1,2,3,4,5].map(n=>{
-      const field = PQ_STAGE_DATE_FIELD[n];
-      const dates = rows.filter(r=>r.stage!==null && r.stage>=n).map(r=>parseSheetDate(r[field]));
+    const stageSeries = [1,2,3].map(n=>{
+      const dates = bucketed.filter(x=>x.b.n===n).map(x=>parseSheetDate(x.b.date));
       const weekly = cumulativeWeeklyCounts(dates, year);
       return { n, weekly };
     });
@@ -1212,7 +1229,7 @@ function renderStageChart(canvasId, dropdownId, rows, year, showCatalogReference
     const labels = firstView.labels;
     const datasets = stageSeries.map(s=>{
       const view = truncateToNow(WEEK_LABELS, s.weekly, dummyTarget, year, 'week');
-      return { type:'bar', label:'Stage '+s.n+' · '+PQ_STAGE_LABELS[s.n], data: view.data, backgroundColor: PQ_STAGE_COLORS[s.n], stack:'s', order:1 };
+      return { type:'bar', label:CHART_STAGE_LABELS[s.n], data: view.data, backgroundColor: CHART_STAGE_COLORS[s.n], stack:'s', order:1 };
     });
     let yMax;
     if(showCatalogReference){
@@ -1234,10 +1251,8 @@ function renderStageChart(canvasId, dropdownId, rows, year, showCatalogReference
       }
     }));
   } else {
-    // single stage — own adaptable y-axis
     const n = parseInt(selectedStage);
-    const field = PQ_STAGE_DATE_FIELD[n];
-    const dates = rows.filter(r=>r.stage!==null && r.stage>=n).map(r=>parseSheetDate(r[field]));
+    const dates = bucketed.filter(x=>x.b.n===n).map(x=>parseSheetDate(x.b.date));
     const weekly = cumulativeWeeklyCounts(dates, year);
     const dummyTarget = new Array(weekly.length).fill(0);
     const view = truncateToNow(WEEK_LABELS, weekly, dummyTarget, year, 'week');
@@ -1247,7 +1262,7 @@ function renderStageChart(canvasId, dropdownId, rows, year, showCatalogReference
       type:'bar',
       data: {
         labels: view.labels,
-        datasets: [ { label:'Stage '+n+' · '+PQ_STAGE_LABELS[n]+' (cumulative)', data: view.data, backgroundColor: PQ_STAGE_COLORS[n], borderRadius:3 } ]
+        datasets: [ { label:CHART_STAGE_LABELS[n]+' (cumulative)', data: view.data, backgroundColor: CHART_STAGE_COLORS[n], borderRadius:3 } ]
       },
       options: {
         responsive:true, maintainAspectRatio:false,
@@ -1262,12 +1277,18 @@ document.getElementById('filterStageWeekly').addEventListener('change', ()=>{
   renderStageChart('chartWeeklyProgress', 'filterStageWeekly', DATA_PQ, new Date().getFullYear(), true);
 });
 
+// Union of Responsible Person values from both tabs, so an engineer who's only assigned
+// agreements still shows up (with a 0) in the PQ charts, and vice versa — same roster everywhere.
+function getAllEngineers(){
+  return Array.from(new Set([...DATA_AG.map(r=>r.responsible), ...DATA_PQ.map(r=>r.responsible)].filter(Boolean))).sort();
+}
+
 // Per-engineer weekly cumulative count of agreements reaching Registered (stage 5) this year.
 // Uses whichever registration date actually applies to that agreement (NG date if NG-relevant,
 // otherwise SE date); falls back to the agreement's start date for the rare case where an
 // agreement was auto-promoted straight to Registered (Business Line = None, both regs Not Needed).
 function renderEngineerAgTargets(year){
-  const engineers = Array.from(new Set(DATA_AG.map(r=>r.responsible).filter(Boolean))).sort();
+  const engineers = getAllEngineers();
   const grid = document.getElementById('engineerGridAg');
   grid.innerHTML = engineers.map((eng,idx)=>`
     <div class="engineer-card">
@@ -1349,7 +1370,7 @@ function renderTargets(){
   renderStageChart('chartWeeklyProgress', 'filterStageWeekly', DATA_PQ, year, true);
 
   // ---- engineer PQ targets ----
-  const engineers = Array.from(new Set(DATA_PQ.map(r=>r.responsible).filter(Boolean))).sort();
+  const engineers = getAllEngineers();
   const anyQualifiedDate = DATA_PQ.some(r=>r.qualified==='Yes' && parseSheetDate(r.qualified_date));
   const anyQualifiedAtAll = DATA_PQ.some(r=>r.qualified==='Yes');
   const unassignedQualifiedCount = DATA_PQ.filter(r=>r.qualified==='Yes' && !r.responsible).length;
@@ -1471,7 +1492,7 @@ function openDrawer(r, page){
         <div class="d-row"><span class="d-k">Agreement</span><span class="d-v"><span class="sn-code sn-link" id="drawerAgLink">${esc(r.agreement_sn||'—')}</span></span></div>
         <div class="d-row"><span class="d-k">Responsible</span><span class="d-v">${esc(r.responsible||'—')}</span></div>
         <div class="d-row"><span class="d-k">Needs PQ?</span><span class="d-v">${yesNoBadge(r.need_pq)}</span></div>
-        <div class="d-row"><span class="d-k">Compliance Matrix Status</span><span class="d-v">${esc(r.compliance_status||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Compliance status</span><span class="d-v">${esc(r.compliance_status||'—')}</span></div>
         <div class="d-row"><span class="d-k">PQ submitted</span><span class="d-v">${esc(r.pq_submit_date||'—')}</span></div>
         <div class="d-row"><span class="d-k">Last vendor reply</span><span class="d-v">${esc(r.last_vendor_reply||'—')}</span></div>
         <div class="d-row"><span class="d-k">Last SE comment</span><span class="d-v">${esc(r.last_comment_se_date||'—')}</span></div>
