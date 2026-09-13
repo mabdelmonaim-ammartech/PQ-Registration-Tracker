@@ -372,7 +372,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
         <input type="text" id="searchPq" placeholder="Search PQ SN, partner, product..." />
         <select id="filterStagePq"><option value="">All stages</option></select>
         <select id="filterBLPq"><option value="">All business lines</option></select>
-        <select id="filterCompliancePq"><option value="">All compliance status</option></select>
+        <select id="filterCompliancePq"><option value="">All Compliance Matrix Status</option></select>
         <button class="btn-ghost small" id="resetPq">Reset</button>
       </div>
       <div class="table-wrap" id="tableWrapPq">
@@ -459,7 +459,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
   </div>
 
   <footer class="foot-note">
-    <p>Live view of two linked Google Sheet tabs — Agreements &amp; Registration and PQ Follow Up, joined by Agreement SN. Stage logic: company stage combines Agreement Status with SE/NG registration progress; product stage is cumulative across Compliance Status, PQ Submit Date, Qualified, Waiting Factory Visit/Sample Status and Shortlisted.</p>
+    <p>Live view of two linked Google Sheet tabs — Agreements &amp; Registration and PQ Follow Up, joined by Agreement SN. Stage logic: company stage combines Agreement Status with SE/NG registration progress; product stage is cumulative across Compliance Matrix Status, PQ Submit Date, Qualified, Waiting Factory Visit/Sample Status and Shortlisted.</p>
   </footer>
 
 </main>
@@ -632,7 +632,7 @@ function mapPqRow(row, i){
     responsible: g('Responsible Person'),
     need_pq: g('Need PQ?'),
     target_product: g('Target Product'),
-    compliance_status: g('Compliance Status'),
+    compliance_status: g('Compliance Matrix Status'),
     business_line: normBL(g('Business Line')),
     documents_ready_date: g('Documents Ready Date'),
     work_started_date: g('Work Started Date'),
@@ -1046,7 +1046,7 @@ function populateFiltersPq(){
   const compSel = document.getElementById('filterCompliancePq');
   stSel.innerHTML = '<option value="">All stages</option>';
   blSel.innerHTML = '<option value="">All business lines</option>';
-  compSel.innerHTML = '<option value="">All compliance status</option>';
+  compSel.innerHTML = '<option value="">All Compliance Matrix Status</option>';
   [1,2,3,4,5].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=PQ_STAGE_LABELS[n]; stSel.appendChild(o); });
   uniqueVals(DATA_PQ,'business_line').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; blSel.appendChild(o); });
   uniqueVals(DATA_PQ,'compliance_status').forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; compSel.appendChild(o); });
@@ -1471,7 +1471,7 @@ function openDrawer(r, page){
         <div class="d-row"><span class="d-k">Agreement</span><span class="d-v"><span class="sn-code sn-link" id="drawerAgLink">${esc(r.agreement_sn||'—')}</span></span></div>
         <div class="d-row"><span class="d-k">Responsible</span><span class="d-v">${esc(r.responsible||'—')}</span></div>
         <div class="d-row"><span class="d-k">Needs PQ?</span><span class="d-v">${yesNoBadge(r.need_pq)}</span></div>
-        <div class="d-row"><span class="d-k">Compliance status</span><span class="d-v">${esc(r.compliance_status||'—')}</span></div>
+        <div class="d-row"><span class="d-k">Compliance Matrix Status</span><span class="d-v">${esc(r.compliance_status||'—')}</span></div>
         <div class="d-row"><span class="d-k">PQ submitted</span><span class="d-v">${esc(r.pq_submit_date||'—')}</span></div>
         <div class="d-row"><span class="d-k">Last vendor reply</span><span class="d-v">${esc(r.last_vendor_reply||'—')}</span></div>
         <div class="d-row"><span class="d-k">Last SE comment</span><span class="d-v">${esc(r.last_comment_se_date||'—')}</span></div>
