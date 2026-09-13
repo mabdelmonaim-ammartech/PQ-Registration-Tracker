@@ -211,6 +211,15 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .target-headline .t-note{font-size:12px; color:var(--text-dim); margin-left:auto; font-family:var(--font-mono);}
 .chart-wrap{position:relative; height:260px;}
 
+.coverage-layout{display:flex; align-items:center; gap:36px; flex-wrap:wrap;}
+.coverage-chart-wrap{height:320px; width:320px; flex-shrink:0;}
+.coverage-legend{display:flex; flex-direction:column; gap:14px; flex:1; min-width:220px;}
+.coverage-item{display:flex; align-items:center; gap:12px;}
+.coverage-swatch{width:14px; height:14px; border-radius:4px; flex-shrink:0;}
+.coverage-item-text .coverage-num{font-family:var(--font-display); font-size:20px; font-weight:700;}
+.coverage-item-text .coverage-pct{font-family:var(--font-mono); font-size:12px; color:var(--text-muted); margin-left:6px;}
+.coverage-item-text .coverage-label{font-family:var(--font-mono); font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px;}
+
 .tg-warning{
   display:flex; align-items:center; gap:10px; padding:11px 16px; margin-bottom:18px;
   background:rgba(217,138,21,0.08); border:1px solid rgba(217,138,21,0.3); border-radius:10px;
@@ -255,7 +264,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v37 · 13 Sep 2026, 09:32</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v38 · 13 Sep 2026, 10:12</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -410,6 +419,17 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 
   <!-- ============ TARGETS PAGE ============ -->
   <div id="pageTg" class="page" style="display:none;">
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Target product coverage</h2>
+        <span class="panel-sub">How much of the full 248-product target catalog we've actually touched</span>
+      </div>
+      <div class="coverage-layout">
+        <div class="chart-wrap coverage-chart-wrap"><canvas id="chartCoverage"></canvas></div>
+        <div class="coverage-legend" id="coverageLegend"></div>
+      </div>
+    </section>
 
     <h2 class="target-section-title">Agreements &amp; Registration</h2>
 
@@ -1337,9 +1357,65 @@ function renderEngineerAgTargets(year){
   });
 }
 
+let chartCoverageInstance = null;
+
+// Aggregates by UNIQUE target product (not per PQ row), since multiple companies can be
+// competing for the same target product — each product counts once, at its best status
+// across every row referencing it (same priority as chartBucketFor: Qualified > Submitted).
+function renderCoverageChart(){
+  const bestByProduct = new Map();
+  DATA_PQ.forEach(r=>{
+    if(!r.target_product) return;
+    const b = chartBucketFor(r);
+    if(!b) return;
+    const prev = bestByProduct.get(r.target_product);
+    if(!prev || b.n > prev) bestByProduct.set(r.target_product, b.n);
+  });
+  let qualifiedCount = 0, submittedCount = 0;
+  bestByProduct.forEach(n=>{
+    if(n===3) qualifiedCount++;
+    else if(n===2) submittedCount++;
+    // n===1 (Matrix Done only) isn't part of this specific breakdown — falls into "remaining"
+  });
+  const remaining = Math.max(0, TARGET_CATALOG_SIZE - qualifiedCount - submittedCount);
+
+  const segments = [
+    { label:'Qualified', num:qualifiedCount, color:'#1F9D65' },
+    { label:'PQ Submitted', num:submittedCount, color:'#D98A15' },
+    { label:'Not yet covered', num:remaining, color:'#CFE1F0' },
+  ];
+
+  document.getElementById('coverageLegend').innerHTML = segments.map(s=>{
+    const pct = ((s.num/TARGET_CATALOG_SIZE)*100).toFixed(1);
+    return `<div class="coverage-item">
+      <span class="coverage-swatch" style="background:${s.color}"></span>
+      <div class="coverage-item-text">
+        <span class="coverage-num">${s.num}</span><span class="coverage-pct">${pct}% of ${TARGET_CATALOG_SIZE}</span>
+        <div class="coverage-label">${esc(s.label)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  if(chartCoverageInstance) chartCoverageInstance.destroy();
+  chartCoverageInstance = new Chart(document.getElementById('chartCoverage'), {
+    type: 'pie',
+    data: {
+      labels: segments.map(s=>s.label),
+      datasets: [{ data: segments.map(s=>s.num), backgroundColor: segments.map(s=>s.color), borderWidth:2, borderColor:'#FFFFFF' }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: ctx => `${ctx.label}: ${ctx.raw} (${((ctx.raw/TARGET_CATALOG_SIZE)*100).toFixed(1)}%)` } } }
+    }
+  });
+}
+
 function renderTargets(){
   const year = new Date().getFullYear();
   const TARGET = 10;
+
+  // ---- target product coverage (pie, at the very top) ----
+  renderCoverageChart();
 
   // ---- company agreement target ----
   const signedDates = DATA_AG.filter(r=>r.stage!==null && r.stage>=3).map(r=>parseSheetDate(r.agreement_start));
