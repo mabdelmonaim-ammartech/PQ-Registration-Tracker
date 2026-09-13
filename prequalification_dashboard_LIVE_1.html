@@ -255,7 +255,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v36 · 13 Sep 2026, 09:15</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v37 · 13 Sep 2026, 09:32</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -545,7 +545,13 @@ function parseSheetDate(str){
   }
   m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if(m){
-    const d = new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]));
+    const a = parseInt(m[1]), b = parseInt(m[2]), year = parseInt(m[3]);
+    let day, month;
+    if(a>12 && b<=12){ day=a; month=b; }        // e.g. 14/8/2026 — only valid as day-first
+    else if(b>12 && a<=12){ day=b; month=a; }   // e.g. 4/19/2026 — only valid as month-first
+    else { month=a; day=b; }                     // ambiguous (both <=12) — default to month-first (US)
+    if(month<1 || month>12 || day<1 || day>31) return null;
+    const d = new Date(year, month-1, day);
     return isNaN(d.getTime()) ? null : d;
   }
   return null;
