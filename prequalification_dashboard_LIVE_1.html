@@ -798,7 +798,7 @@ function renderAgFlow(){
     {label:'Agreement Negotiation', sub:'in progress', count:exact(2), done:false},
     {label:'SE Registration', sub:'in progress', count:exact(3), done:false},
     {label:'NG Registration', sub:ngBucket+' pending to start', count:ngBucket, done:false},
-    {label:'Registered', sub:'done', count:exact(5), done:true},
+    {label:'Registered Companies', sub:'work is done', count:exact(5), done:true},
   ]);
 }
 function renderPqFlow(){
@@ -819,7 +819,7 @@ function computeKpisAg(){
   const seRegistered = DATA_AG.filter(r=>r.se_reg_status==='Registered').length;
   const ngRegistered = DATA_AG.filter(r=>r.ng_reg_status==='Registered').length;
   const cards = [
-    {num: signedDone, label:'Agreements done', sub: 'of '+total+' Tasks', accent:'var(--green)'},
+    {num: signedDone, label:'Agreements Signed', sub: 'of '+total+' Tasks', accent:'var(--green)'},
     {num: seRegistered, label:'SE registered', sub: 'of '+total+' Tasks', accent:'var(--green)'},
     {num: ngRegistered, label:'NG registered', sub: 'of '+total+' Tasks', accent:'var(--green)'},
   ];
