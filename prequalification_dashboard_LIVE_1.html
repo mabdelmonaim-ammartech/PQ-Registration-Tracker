@@ -226,6 +226,11 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .mini-pie-legend .lg{display:flex; align-items:center; gap:8px;}
 .mini-pie-legend .sw{width:12px; height:12px; border-radius:3px; flex-shrink:0;}
 .mini-funnel{grid-area:funnel;}
+#miniFunnelSvg .flow-node-count{font-size:34px;}
+#miniFunnelSvg .flow-node-label{font-size:14.5px;}
+#miniFunnelSvg .flow-node-sub{font-size:13px;}
+.mini-grid{grid-template-columns:300px 1fr 230px;}
+
 .mini-qualified{grid-area:qual; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; border:2px solid var(--green); box-shadow:0 0 14px rgba(31,157,101,0.25);}
 .mini-qualified .mini-big{font-size:84px; color:var(--green);}
 .mini-bottom{grid-area:bottom; display:grid; grid-template-columns:1fr 1fr; gap:18px;}
@@ -821,9 +826,9 @@ document.getElementById('tabPqBtn').addEventListener('click', ()=>switchPage('pq
 document.getElementById('tabTgBtn').addEventListener('click', ()=>switchPage('tg'));
 
 // ---------- funnel ----------
-function renderFunnelSVG(containerId, stages, wOverride){
+function renderFunnelSVG(containerId, stages, wOverride, mini){
   const n = stages.length;
-  const w=wOverride||1180,h=168, margin = n<=4?130:95, step=(w-margin*2)/(n-1), cy=66, r = n<=4?42:38;
+  const w=wOverride||1180,h=mini?190:168, margin = mini?80:(n<=4?130:95), step=(w-margin*2)/(n-1), cy=mini?78:66, r = mini?54:(n<=4?42:38);
   let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">`;
   for(let i=0;i<n-1;i++){
     const x1=margin+step*i+r, x2=margin+step*(i+1)-r;
@@ -1460,7 +1465,7 @@ function renderMiniDash(){
     {label:'Study In Progress', sub:'in progress', count:exact(2), done:false},
     {label:'Matrix Done', sub:'in progress', count:exact(3), done:false},
     {label:'PQ Submitted', sub:'in progress', count:exact(4), done:false},
-  ], 900);
+  ], 700, true);
   document.getElementById('miniQualified').textContent = exact(5);
 
   document.getElementById('miniSalesTarget').textContent = SALES_TARGET;
