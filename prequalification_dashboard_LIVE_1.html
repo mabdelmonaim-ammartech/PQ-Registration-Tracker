@@ -211,6 +211,33 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .target-headline .t-note{font-size:12px; color:var(--text-dim); margin-left:auto; font-family:var(--font-mono);}
 .chart-wrap{position:relative; height:260px;}
 
+
+/* ---- Targets mini dashboard ---- */
+.mini-dash{margin-top:0;}
+.mini-grid{display:grid; grid-template-columns:300px 1fr 230px; grid-template-areas:"pie funnel qual" "pie bottom bottom"; gap:18px;}
+.mini-box{border:1px solid var(--line); border-radius:12px; background:var(--bg-panel); padding:16px 18px;}
+.mini-title{font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); font-weight:600; margin-bottom:8px;}
+.mini-pie{grid-area:pie; display:flex; flex-direction:column; align-items:center;}
+.mini-pie-wrap{position:relative; width:230px; height:230px;}
+.mini-pie-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none;}
+.mini-pie-total{font-family:var(--font-display); font-size:42px; font-weight:700; line-height:1;}
+.mini-pie-cap{font-family:var(--font-mono); font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin-top:4px;}
+.mini-pie-legend{display:flex; flex-direction:column; gap:6px; margin-top:12px; font-family:var(--font-mono); font-size:12px; color:var(--text-muted); width:100%;}
+.mini-pie-legend .lg{display:flex; align-items:center; gap:8px;}
+.mini-pie-legend .sw{width:12px; height:12px; border-radius:3px; flex-shrink:0;}
+.mini-funnel{grid-area:funnel;}
+.mini-qualified{grid-area:qual; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; border:2px solid var(--green); box-shadow:0 0 14px rgba(31,157,101,0.25);}
+.mini-qualified .mini-big{font-size:84px; color:var(--green);}
+.mini-bottom{grid-area:bottom; display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+.mini-bottom .mini-box{display:flex; flex-direction:column; justify-content:center;}
+.mini-big{font-family:var(--font-display); font-size:52px; font-weight:700; line-height:1.05;}
+.mini-cap{font-family:var(--font-mono); font-size:11.5px; color:var(--text-dim); margin-top:4px;}
+.mini-ready{border-color:var(--green);}
+.mini-ready .mini-big{color:var(--green);}
+@media (max-width:1000px){
+  .mini-grid{grid-template-columns:1fr; grid-template-areas:"pie" "funnel" "qual" "bottom";}
+  .mini-bottom{grid-template-columns:1fr;}
+}
 .coverage-layout{display:flex; align-items:center; gap:36px; flex-wrap:wrap;}
 .coverage-chart-wrap{height:320px; width:320px; flex-shrink:0;}
 .coverage-legend{display:flex; flex-direction:column; gap:14px; flex:1; min-width:220px;}
@@ -272,9 +299,9 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 </header>
 
 <nav class="page-tabs">
-  <button class="page-tab active" id="tabAgBtn" data-page="ag">Agreements &amp; Registration</button>
+  <button class="page-tab active" id="tabTgBtn" data-page="tg">Targets</button>
+  <button class="page-tab" id="tabAgBtn" data-page="ag">Agreements &amp; Registration</button>
   <button class="page-tab" id="tabPqBtn" data-page="pq">PQ Follow Up</button>
-  <button class="page-tab" id="tabTgBtn" data-page="tg">Targets</button>
 </nav>
 
 <div id="loadingBanner" class="loading-banner">
@@ -287,7 +314,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 <main id="mainContent" style="display:none;">
 
   <!-- ============ AGREEMENTS PAGE ============ -->
-  <div id="pageAg" class="page">
+  <div id="pageAg" class="page" style="display:none;">
     <section class="panel flow-panel">
       <div class="panel-head">
         <h2>Agreement &amp; registration funnel</h2>
@@ -418,16 +445,39 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
   </div>
 
   <!-- ============ TARGETS PAGE ============ -->
-  <div id="pageTg" class="page" style="display:none;">
+  <div id="pageTg" class="page">
 
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Target product coverage</h2>
-        <span class="panel-sub">How much of the full 248-product target catalog we've actually touched</span>
-      </div>
-      <div class="coverage-layout">
-        <div class="chart-wrap coverage-chart-wrap"><canvas id="chartCoverage"></canvas></div>
-        <div class="coverage-legend" id="coverageLegend"></div>
+    <section class="panel mini-dash">
+      <div class="mini-grid">
+        <div class="mini-box mini-pie">
+          <div class="mini-title">Target products</div>
+          <div class="mini-pie-wrap">
+            <canvas id="chartCoverage"></canvas>
+            <div class="mini-pie-center"><span class="mini-pie-total" id="miniPieTotal">–</span><span class="mini-pie-cap">products</span></div>
+          </div>
+          <div class="mini-pie-legend" id="miniPieLegend"></div>
+        </div>
+        <div class="mini-box mini-funnel">
+          <div class="mini-title">PQ process funnel</div>
+          <div id="miniFunnelSvg"></div>
+        </div>
+        <div class="mini-box mini-qualified">
+          <div class="mini-title">Qualified</div>
+          <div class="mini-big" id="miniQualified">–</div>
+          <div class="mini-cap">products qualified</div>
+        </div>
+        <div class="mini-bottom">
+          <div class="mini-box mini-target">
+            <div class="mini-title">Sales target</div>
+            <div class="mini-big" id="miniSalesTarget">–</div>
+            <div class="mini-cap">unique products to sell (set by sales team)</div>
+          </div>
+          <div class="mini-box mini-ready">
+            <div class="mini-title">Ready to sell</div>
+            <div class="mini-big" id="miniReady">–</div>
+            <div class="mini-cap" id="miniReadyCap"></div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -455,7 +505,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     <section class="panel">
       <div class="panel-head">
         <h2>Weekly PQ stage distribution</h2>
-        <span class="panel-sub">Light blue = full 248-product target catalog. Colored = your tracked PQs, by stage, week by week.</span>
+        <span class="panel-sub">Light blue = full <span id="catalogSizeTxt">248</span>-product target catalog. Colored = your tracked PQs, by stage, week by week.</span>
       </div>
       <div class="toolbar" style="margin-bottom:14px;">
         <select id="filterStageWeekly" style="max-width:260px;">
@@ -501,6 +551,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
    CONFIG — one published CSV link per tab.
    ============================================================ */
 const AGREEMENTS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSWZEn_sU14OWjk58yZUzvLuAjbiPi7jlpf4AuT_coLodNewo0r2LRvajoayL028A/pub?gid=1402571685&single=true&output=csv";
+const CATALOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSWZEn_sU14OWjk58yZUzvLuAjbiPi7jlpf4AuT_coLodNewo0r2LRvajoayL028A/pub?gid=360101104&single=true&output=csv"; // Sheet1 — column J = target product list
 const PQ_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSWZEn_sU14OWjk58yZUzvLuAjbiPi7jlpf4AuT_coLodNewo0r2LRvajoayL028A/pub?gid=31467374&single=true&output=csv";
 
 
@@ -510,7 +561,7 @@ const esc = (s) => (s===null||s===undefined) ? '' : String(s).replace(/[&<>"']/g
 const norm = (s) => (s||'').replace(/\s+/g,' ').trim();
 
 const AG_STAGE_LABELS = {1:'Study', 2:'Agreement Negotiation', 3:'SE Registration', 4:'NG Registration', 5:'Registered'};
-const PQ_STAGE_LABELS = {1:'Work Started', 2:'Study In Progress', 3:'Compliance Matrix Done', 4:'PQ Submitted', 5:'Qualified'};
+const PQ_STAGE_LABELS = {1:'Ready to Start', 2:'Study In Progress', 3:'Compliance Matrix Done', 4:'PQ Submitted', 5:'Qualified Products'};
 const PQ_STAGE_DATE_FIELD = {1:'work_started_date', 2:'study_in_progress_date', 3:'documents_ready_date', 4:'pq_submit_date', 5:'qualified_date'};
 const PQ_STAGE_COLORS = {1:'#6FB3DE', 2:'#1E88C7', 3:'#8354C4', 4:'#D98A15', 5:'#1F9D65'};
 
@@ -530,7 +581,7 @@ const MONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:
 
 let DATA_AG = [];
 let DATA_PQ = [];
-let activePage = 'ag';
+let activePage = 'tg';
 
 function fetchCSV(url){
   return new Promise((resolve, reject) => {
@@ -770,9 +821,9 @@ document.getElementById('tabPqBtn').addEventListener('click', ()=>switchPage('pq
 document.getElementById('tabTgBtn').addEventListener('click', ()=>switchPage('tg'));
 
 // ---------- funnel ----------
-function renderFunnelSVG(containerId, stages){
+function renderFunnelSVG(containerId, stages, wOverride){
   const n = stages.length;
-  const w=1180,h=168, margin = n<=4?130:95, step=(w-margin*2)/(n-1), cy=66, r = n<=4?42:38;
+  const w=wOverride||1180,h=168, margin = n<=4?130:95, step=(w-margin*2)/(n-1), cy=66, r = n<=4?42:38;
   let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">`;
   for(let i=0;i<n-1;i++){
     const x1=margin+step*i+r, x2=margin+step*(i+1)-r;
@@ -804,11 +855,11 @@ function renderAgFlow(){
 function renderPqFlow(){
   const exact = n => DATA_PQ.filter(r=>r.stage===n).length;
   renderFunnelSVG('flowSvgWrapPq', [
-    {label:'Work Started', sub:'in progress', count:exact(1), done:false},
+    {label:'Ready to Start', sub:'in progress', count:exact(1), done:false},
     {label:'Study In Progress', sub:'in progress', count:exact(2), done:false},
     {label:'Matrix Done', sub:'in progress', count:exact(3), done:false},
     {label:'PQ Submitted', sub:'in progress', count:exact(4), done:false},
-    {label:'Qualified', sub:'done', count:exact(5), done:true},
+    {label:'Qualified Products', sub:'work is done', count:exact(5), done:true},
   ]);
 }
 
@@ -830,7 +881,7 @@ function computeKpisPq(){
   const total = DATA_PQ.length;
   const listed = DATA_PQ.filter(r=>r.shortlisted==='Yes').length;
   const cards = [
-    {num: listed, label:'Listed in KSA', sub: 'of '+total+' tracked products', accent:'var(--green)'},
+    {num: listed, label:'Products Listed', sub: 'of '+total+' Tasks', accent:'var(--green)'},
   ];
   document.getElementById('kpiStripPq').innerHTML = cards.map(c=>`
     <div class="kpi-card" style="--kpi-accent:${c.accent}"><div class="kpi-num">${c.num}</div><div class="kpi-label">${c.label}</div><div class="kpi-sub">${c.sub}</div></div>`).join('');
@@ -1227,7 +1278,8 @@ function populateStageDropdown(sel){
   sel.dataset.populated = '1';
 }
 
-const TARGET_CATALOG_SIZE = 248;
+let TARGET_CATALOG_SIZE = 248; // fallback only — overwritten at every refresh with the count of Sheet1 column J (J2 down)
+const SALES_TARGET = 100; // set by the sales team — edit this number
 
 // Tracks only Compliance Matrix Done, PQ Submitted, and Qualified — each row lands in exactly one
 // bucket (highest reached), dated by that bucket's own date column. `rows` = PQ rows in scope
@@ -1359,63 +1411,71 @@ function renderEngineerAgTargets(year){
 
 let chartCoverageInstance = null;
 
-// Aggregates by UNIQUE target product (not per PQ row), since multiple companies can be
-// competing for the same target product — each product counts once, at its best status
-// across every row referencing it (same priority as chartBucketFor: Qualified > Submitted).
-function renderCoverageChart(){
-  const bestByProduct = new Map();
+// Counts Sheet1 column J (J2 down) — every non-blank cell is one target product.
+async function loadCatalogSize(){
+  try{
+    const rows = await new Promise((res,rej)=>Papa.parse(CATALOG_CSV_URL,{download:true, header:false, skipEmptyLines:false,
+      complete:r=>res(r.data), error:e=>rej(e)}));
+    let n = 0;
+    for(let i=1;i<rows.length;i++){ const v=(rows[i][9]||'').trim(); if(v) n++; } // column J = index 9, skip header row 1
+    if(n>0) TARGET_CATALOG_SIZE = n;
+  }catch(e){ console.error('Could not read Sheet1 column J — using fallback count', e); }
+}
+
+// "Ready to sell" = every qualified product + products whose agreement is Signed and that don't need PQ at all.
+function computeReadyToSell(){
+  const agBySN = new Map(DATA_AG.map(r=>[r.sr, r]));
+  let qualified = 0, noPq = 0;
   DATA_PQ.forEach(r=>{
-    if(!r.target_product) return;
-    const b = chartBucketFor(r);
-    if(!b) return;
-    const prev = bestByProduct.get(r.target_product);
-    if(!prev || b.n > prev) bestByProduct.set(r.target_product, b.n);
+    if(r.qualified==='Yes'){ qualified++; return; }
+    const ag = agBySN.get(r.agreement_sn);
+    if(ag && ag.agreement_status==='Signed' && /^no$/i.test(r.need_pq||'')) noPq++;
   });
-  let qualifiedCount = 0, submittedCount = 0;
-  bestByProduct.forEach(n=>{
-    if(n===3) qualifiedCount++;
-    else if(n===2) submittedCount++;
-    // n===1 (Matrix Done only) isn't part of this specific breakdown — falls into "remaining"
-  });
-  const remaining = Math.max(0, TARGET_CATALOG_SIZE - qualifiedCount - submittedCount);
+  return {qualified, noPq, total: qualified+noPq};
+}
 
-  const segments = [
-    { label:'Qualified', num:qualifiedCount, color:'#1F9D65' },
-    { label:'PQ Submitted', num:submittedCount, color:'#D98A15' },
-    { label:'Not yet covered', num:remaining, color:'#CFE1F0' },
+function renderMiniDash(){
+  const total = TARGET_CATALOG_SIZE;
+  const inPq = DATA_PQ.length;
+  const remaining = Math.max(0, total-inPq);
+  document.getElementById('miniPieTotal').textContent = total;
+  const segs = [
+    {label:'Product lines in PQ list', num:inPq, color:'#1E88C7'},
+    {label:'Not in PQ list yet', num:remaining, color:'#CFE1F0'},
   ];
-
-  document.getElementById('coverageLegend').innerHTML = segments.map(s=>{
-    const pct = ((s.num/TARGET_CATALOG_SIZE)*100).toFixed(1);
-    return `<div class="coverage-item">
-      <span class="coverage-swatch" style="background:${s.color}"></span>
-      <div class="coverage-item-text">
-        <span class="coverage-num">${s.num}</span><span class="coverage-pct">${pct}% of ${TARGET_CATALOG_SIZE}</span>
-        <div class="coverage-label">${esc(s.label)}</div>
-      </div>
-    </div>`;
-  }).join('');
-
+  document.getElementById('miniPieLegend').innerHTML = segs.map(s=>
+    `<div class="lg"><span class="sw" style="background:${s.color}"></span><span><b>${s.num}</b> ${esc(s.label)} (${((s.num/total)*100).toFixed(1)}%)</span></div>`).join('');
   if(chartCoverageInstance) chartCoverageInstance.destroy();
   chartCoverageInstance = new Chart(document.getElementById('chartCoverage'), {
-    type: 'pie',
-    data: {
-      labels: segments.map(s=>s.label),
-      datasets: [{ data: segments.map(s=>s.num), backgroundColor: segments.map(s=>s.color), borderWidth:2, borderColor:'#FFFFFF' }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: ctx => `${ctx.label}: ${ctx.raw} (${((ctx.raw/TARGET_CATALOG_SIZE)*100).toFixed(1)}%)` } } }
-    }
+    type:'doughnut',
+    data:{ labels:segs.map(s=>s.label), datasets:[{ data:segs.map(s=>s.num), backgroundColor:segs.map(s=>s.color), borderWidth:2, borderColor:'#FFFFFF' }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw} (${((ctx.raw/total)*100).toFixed(1)}%)`}} } }
   });
+
+  // funnel: first 4 stages as circles; the last stage (Qualified) gets its own big box
+  const exact = n => DATA_PQ.filter(r=>r.stage===n).length;
+  renderFunnelSVG('miniFunnelSvg', [
+    {label:'Ready to Start', sub:'in progress', count:exact(1), done:false},
+    {label:'Study In Progress', sub:'in progress', count:exact(2), done:false},
+    {label:'Matrix Done', sub:'in progress', count:exact(3), done:false},
+    {label:'PQ Submitted', sub:'in progress', count:exact(4), done:false},
+  ], 900);
+  document.getElementById('miniQualified').textContent = exact(5);
+
+  document.getElementById('miniSalesTarget').textContent = SALES_TARGET;
+  const rts = computeReadyToSell();
+  document.getElementById('miniReady').textContent = rts.total;
+  document.getElementById('miniReadyCap').textContent = rts.qualified+' qualified + '+rts.noPq+' signed with no PQ needed';
+  const cs = document.getElementById('catalogSizeTxt'); if(cs) cs.textContent = total;
 }
 
 function renderTargets(){
   const year = new Date().getFullYear();
   const TARGET = 10;
 
-  // ---- target product coverage (pie, at the very top) ----
-  renderCoverageChart();
+  // ---- mini dashboard (top of the page) ----
+  renderMiniDash();
 
   // ---- company agreement target ----
   const signedDates = DATA_AG.filter(r=>r.stage!==null && r.stage>=3).map(r=>parseSheetDate(r.agreement_start));
@@ -1621,7 +1681,7 @@ async function loadData(){
   document.getElementById('mainContent').style.display = 'none';
   document.getElementById('lastUpdated').textContent = 'Loading…';
   try{
-    const [agRaw, pqRaw] = await Promise.all([fetchCSV(AGREEMENTS_CSV_URL), fetchCSV(PQ_CSV_URL)]);
+    const [agRaw, pqRaw] = await Promise.all([fetchCSV(AGREEMENTS_CSV_URL), fetchCSV(PQ_CSV_URL), loadCatalogSize()]);
     DATA_AG = agRaw.filter(r=>{ const g=makeGetter(r); return g('Partner'); }).map(mapAgRow).reverse();
     DATA_PQ = pqRaw.filter(r=>{ const g=makeGetter(r); return g('Partner'); }).map(mapPqRow).reverse();
 
