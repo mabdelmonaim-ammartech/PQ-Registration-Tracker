@@ -1429,14 +1429,19 @@ async function loadCatalogSize(){
 
 // "Ready to sell" = every qualified product + products whose agreement is Signed and that don't need PQ at all.
 function computeReadyToSell(){
-  const agBySN = new Map(DATA_AG.map(r=>[r.sr, r]));
-  let qualified = 0, noPq = 0;
+  // Step 1: PQ row is Qualified -> ready to sell.
+  // Step 2: otherwise take the row's Agreement SN, find that agreement in the Agreements sheet;
+  //         if it is Signed AND the product does not need PQ ("Need PQ?" = No) -> ready to sell.
+  const key = v => String(v||'').replace(/\s+/g,' ').trim().toUpperCase();
+  const agBySN = new Map(DATA_AG.map(r=>[key(r.sr), r]));
+  const items = []; let qualified = 0, noPq = 0;
   DATA_PQ.forEach(r=>{
-    if(r.qualified==='Yes'){ qualified++; return; }
-    const ag = agBySN.get(r.agreement_sn);
-    if(ag && ag.agreement_status==='Signed' && /^no$/i.test(r.need_pq||'')) noPq++;
+    const name = (r.partner||'?')+' – '+(r.target_product||r.product||'?');
+    if(r.qualified==='Yes'){ qualified++; items.push(name+' (qualified)'); return; }
+    const ag = r.agreement_sn ? agBySN.get(key(r.agreement_sn)) : null;
+    if(ag && ag.agreement_status==='Signed' && /^no$/i.test(r.need_pq||'')){ noPq++; items.push(name+' (agreement signed, no PQ needed)'); }
   });
-  return {qualified, noPq, total: qualified+noPq};
+  return {qualified, noPq, total: qualified+noPq, items};
 }
 
 function renderMiniDash(){
@@ -1472,6 +1477,7 @@ function renderMiniDash(){
   const rts = computeReadyToSell();
   document.getElementById('miniReady').textContent = rts.total;
   document.getElementById('miniReadyCap').textContent = rts.qualified+' qualified + '+rts.noPq+' signed with no PQ needed';
+  document.querySelector('.mini-ready').title = rts.items.join('\n') || 'None yet';
   const cs = document.getElementById('catalogSizeTxt'); if(cs) cs.textContent = total;
 }
 
