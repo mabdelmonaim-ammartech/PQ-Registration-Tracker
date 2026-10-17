@@ -214,11 +214,11 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 
 /* ---- Targets mini dashboard ---- */
 .mini-dash{margin-top:0;}
-.mini-grid{display:grid; grid-template-columns:300px 1fr 230px; grid-template-areas:"pie funnel qual" "pie bottom bottom"; gap:18px;}
+.mini-grid{display:grid; grid-template-columns:260px 1fr 200px; grid-template-areas:"pie funnel qual" "pie bottom bottom"; gap:18px;}
 .mini-box{border:1px solid var(--line); border-radius:12px; background:var(--bg-panel); padding:16px 18px;}
 .mini-title{font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); font-weight:600; margin-bottom:8px;}
 .mini-pie{grid-area:pie; display:flex; flex-direction:column; align-items:center;}
-.mini-pie-wrap{position:relative; width:230px; height:230px;}
+.mini-pie-wrap{position:relative; width:210px; height:210px;}
 .mini-pie-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none;}
 .mini-pie-total{font-family:var(--font-display); font-size:42px; font-weight:700; line-height:1;}
 .mini-pie-cap{font-family:var(--font-mono); font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin-top:4px;}
@@ -227,9 +227,17 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .mini-pie-legend .sw{width:12px; height:12px; border-radius:3px; flex-shrink:0;}
 .mini-funnel{grid-area:funnel;}
 #miniFunnelSvg .flow-node-count{font-size:34px;}
+.flow-move{paint-order:stroke; stroke:#fff; stroke-width:5px; stroke-linejoin:round; font-family:var(--font-display); font-size:21px; font-weight:700;}
+.flow-move.in{fill:#1F9D65;}
+.flow-move.out{fill:#D93B30;}
+.flow-move.zero{fill:#9AA9B8;}
+.mini-legend{font-family:var(--font-mono); font-size:11.5px; color:var(--text-dim); margin:-2px 0 4px;}
+.mini-legend b.g{color:#1F9D65;} .mini-legend b.r{color:#D93B30;}
+.mini-move-note{font-family:var(--font-mono); font-size:11px; color:var(--text-dim); margin-top:6px;}
+.mini-qmove{font-family:var(--font-display); font-size:20px; font-weight:700; color:#1F9D65; margin-top:6px;}
 #miniFunnelSvg .flow-node-label{font-size:14.5px;}
 #miniFunnelSvg .flow-node-sub{font-size:13px;}
-.mini-grid{grid-template-columns:300px 1fr 230px;}
+.mini-grid{grid-template-columns:260px 1fr 200px;}
 
 .mini-qualified{grid-area:qual; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; border:2px solid var(--green); box-shadow:0 0 14px rgba(31,157,101,0.25);}
 .mini-qualified .mini-big{font-size:84px; color:var(--green);}
@@ -237,6 +245,15 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .mini-bottom .mini-box{display:flex; flex-direction:column; justify-content:center;}
 .mini-big{font-family:var(--font-display); font-size:52px; font-weight:700; line-height:1.05;}
 .mini-cap{font-family:var(--font-mono); font-size:11.5px; color:var(--text-dim); margin-top:4px;}
+.mini-lines{margin-top:18px;}
+.mini-lines-body{display:flex; align-items:center; gap:40px; flex-wrap:wrap;}
+.lines-legend{flex:1; min-width:300px; display:flex; flex-direction:column; gap:14px;}
+.lines-group{border-left:4px solid var(--line); padding-left:14px;}
+.lines-group-head{font-family:var(--font-display); font-size:20px; font-weight:700;}
+.lines-group-head span{font-family:var(--font-mono); font-size:12px; font-weight:500; color:var(--text-muted); margin-left:8px;}
+.lines-row{display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:13px; color:var(--text-muted); margin-top:5px;}
+.lines-row .sw{width:12px; height:12px; border-radius:3px; flex-shrink:0;}
+.lines-row b{color:var(--text); font-size:15px;}
 .mini-ready{border-color:var(--green);}
 .mini-ready .mini-big{color:var(--green);}
 @media (max-width:1000px){
@@ -296,7 +313,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v38 · 13 Sep 2026, 10:12</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v44 · 17 Oct 2026, 12:50</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -464,12 +481,15 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
         </div>
         <div class="mini-box mini-funnel">
           <div class="mini-title">PQ process funnel</div>
+          <div class="mini-legend"><b class="g">+n</b> entered this stage &nbsp;·&nbsp; <b class="r">−n</b> left this stage &nbsp;·&nbsp; last <span id="moveDays">7</span> days</div>
           <div id="miniFunnelSvg"></div>
+          <div class="mini-move-note" id="miniMoveNote"></div>
         </div>
         <div class="mini-box mini-qualified">
           <div class="mini-title">Qualified</div>
           <div class="mini-big" id="miniQualified">–</div>
           <div class="mini-cap">products qualified</div>
+          <div class="mini-qmove" id="miniQMove"></div>
         </div>
         <div class="mini-bottom">
           <div class="mini-box mini-target">
@@ -482,6 +502,16 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
             <div class="mini-big" id="miniReady">–</div>
             <div class="mini-cap" id="miniReadyCap"></div>
           </div>
+        </div>
+      </div>
+      <div class="mini-box mini-lines">
+        <div class="mini-title">Product lines we are working on</div>
+        <div class="mini-lines-body">
+          <div class="mini-pie-wrap">
+            <canvas id="chartLines"></canvas>
+            <div class="mini-pie-center"><span class="mini-pie-total" id="linesTotal">–</span><span class="mini-pie-cap">product lines</span></div>
+          </div>
+          <div class="lines-legend" id="linesLegend"></div>
         </div>
       </div>
     </section>
@@ -725,7 +755,7 @@ function mapPqRow(row, i){
     product: g('Product'),
     agreement_sn: g('Agreement SN.'),
     responsible: g('Responsible Person'),
-    need_pq: g('Need PQ?'),
+    need_pq: g('Need PQ?') || g('Need PQ') || g('Needs PQ?') || g('Needs PQ'),
     target_product: g('Target Product'),
     compliance_status: g('Compliance Matrix Status'),
     compliance_matrix_done_date: g('Compliance Matrix Done Date'),
@@ -828,7 +858,7 @@ document.getElementById('tabTgBtn').addEventListener('click', ()=>switchPage('tg
 // ---------- funnel ----------
 function renderFunnelSVG(containerId, stages, wOverride, mini){
   const n = stages.length;
-  const w=wOverride||1180,h=mini?190:168, margin = mini?80:(n<=4?130:95), step=(w-margin*2)/(n-1), cy=mini?78:66, r = mini?54:(n<=4?42:38);
+  const w=wOverride||1180,h=mini?190:168, margin = mini?92:(n<=4?130:95), step=(w-margin*2)/(n-1), cy=mini?78:66, r = mini?40:(n<=4?42:38);
   let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">`;
   for(let i=0;i<n-1;i++){
     const x1=margin+step*i+r, x2=margin+step*(i+1)-r;
@@ -840,6 +870,11 @@ function renderFunnelSVG(containerId, stages, wOverride, mini){
     const circleClass = 'flow-node-circle' + (lit?' lit':'') + (s.done && lit?' done':'');
     svg += `<circle cx="${cx}" cy="${cy}" r="${r}" class="${circleClass}"/>`;
     svg += `<text x="${cx}" y="${cy+6}" text-anchor="middle" class="flow-node-count${s.done?' done':''}">${s.count}</text>`;
+    if(s.moveIn!==undefined){
+      const fmt=(n,sign)=> n>0 ? sign+n : '0';
+      svg += `<text x="${cx-r-7}" y="${cy+8}" text-anchor="end" class="flow-move ${s.moveIn>0?'in':'zero'}">${fmt(s.moveIn,'+')}</text>`;
+      if(s.moveOut!==undefined) svg += `<text x="${cx+r+7}" y="${cy+8}" text-anchor="start" class="flow-move ${s.moveOut>0?'out':'zero'}">${fmt(s.moveOut,'−')}</text>`;
+    }
     svg += `<text x="${cx}" y="${cy+r+20}" text-anchor="middle" class="flow-node-label">${esc(s.label)}</text>`;
     svg += `<text x="${cx}" y="${cy+r+34}" text-anchor="middle" class="flow-node-sub">${esc(s.sub)}</text>`;
   });
@@ -1434,14 +1469,90 @@ function computeReadyToSell(){
   //         if it is Signed AND the product does not need PQ ("Need PQ?" = No) -> ready to sell.
   const key = v => String(v||'').replace(/\s+/g,' ').trim().toUpperCase();
   const agBySN = new Map(DATA_AG.map(r=>[key(r.sr), r]));
-  const items = []; let qualified = 0, noPq = 0;
+  const items = [], skipped = []; let qualified = 0, noPq = 0;
   DATA_PQ.forEach(r=>{
     const name = (r.partner||'?')+' – '+(r.target_product||r.product||'?');
     if(r.qualified==='Yes'){ qualified++; items.push(name+' (qualified)'); return; }
-    const ag = r.agreement_sn ? agBySN.get(key(r.agreement_sn)) : null;
-    if(ag && ag.agreement_status==='Signed' && /^no$/i.test(r.need_pq||'')){ noPq++; items.push(name+' (agreement signed, no PQ needed)'); }
+    if(!r.agreement_sn){ skipped.push(name+': no Agreement SN on this PQ row'); return; }
+    const ag = agBySN.get(key(r.agreement_sn));
+    if(!ag){ skipped.push(name+': Agreement SN "'+r.agreement_sn+'" not found in Agreements sheet'); return; }
+    if(ag.agreement_status!=='Signed') return; // agreement not signed yet — expected, not listed
+    if(/^no$/i.test(r.need_pq||'')){ noPq++; items.push(name+' (agreement signed, no PQ needed)'); }
+    else skipped.push(name+': agreement signed but Need PQ? is "'+(r.need_pq||'blank')+'" (must be No)');
   });
-  return {qualified, noPq, total: qualified+noPq, items};
+  return {qualified, noPq, total: qualified+noPq, items, skipped};
+}
+
+const MOVE_DAYS = 7; // movement window: entered/left a stage within the last N days
+
+// Stage entry dates per PQ row. A product is "in" a stage from its entry date until the next stage's entry date.
+function pqEntryDates(r){
+  return {
+    1: parseSheetDate(r.work_started_date),
+    2: parseSheetDate(r.study_in_progress_date),
+    3: parseSheetDate(r.compliance_matrix_done_date) || parseSheetDate(r.documents_ready_date),
+    4: parseSheetDate(r.pq_submit_date),
+    5: parseSheetDate(r.qualified_date),
+  };
+}
+function computeStageMovement(){
+  const now = new Date(); const from = new Date(now.getTime() - MOVE_DAYS*86400000);
+  const inW = d => d && d>from && d<=now;
+  const mv = {1:{in:0,out:0},2:{in:0,out:0},3:{in:0,out:0},4:{in:0,out:0},5:{in:0,out:0}};
+  let missing = 0;
+  DATA_PQ.forEach(r=>{
+    if(r.stage===null || r.stage===undefined) return;
+    const d = pqEntryDates(r);
+    if(!d[r.stage]) missing++; // sits in a stage but has no entry date -> can't be placed in time
+    for(let k=1;k<=5;k++){
+      if(!d[k]) continue;
+      if(inW(d[k])) mv[k].in++;
+      // left stage k = earliest LATER stage date, if it falls in the window
+      let next = null;
+      for(let j=k+1;j<=5;j++){ if(d[j] && (!next || d[j]<next)) next = d[j]; }
+      if(inW(next)) mv[k].out++;
+    }
+  });
+  return {mv, missing};
+}
+
+let chartLinesInstance = null;
+// Pie of every PQ product line: Needs PQ / No PQ needed / not filled in, each split into ready to sell vs not yet.
+// Ready to sell = same rule as the Ready to Sell box (qualified, or signed agreement + no PQ needed).
+function renderProductLinesPie(){
+  const key = v => String(v||'').replace(/\s+/g,' ').trim().toUpperCase();
+  const agBySN = new Map(DATA_AG.map(r=>[key(r.sr), r]));
+  const c = {needReady:0, needNot:0, noReady:0, noNot:0, blankReady:0, blankNot:0};
+  DATA_PQ.forEach(r=>{
+    const np = (r.need_pq||'').trim().toLowerCase();
+    const ag = r.agreement_sn ? agBySN.get(key(r.agreement_sn)) : null;
+    const ready = r.qualified==='Yes' || (np==='no' && ag && ag.agreement_status==='Signed');
+    if(np==='yes') ready ? c.needReady++ : c.needNot++;
+    else if(np==='no') ready ? c.noReady++ : c.noNot++;
+    else ready ? c.blankReady++ : c.blankNot++;
+  });
+  const total = DATA_PQ.length;
+  const needT = c.needReady+c.needNot, noT = c.noReady+c.noNot, blankT = c.blankReady+c.blankNot;
+  const segs = [
+    {label:'Needs PQ – ready to sell', num:c.needReady, color:'#1F9D65'},
+    {label:'Needs PQ – not ready yet', num:c.needNot, color:'#D98A15'},
+    {label:'No PQ needed – ready to sell', num:c.noReady, color:'#1E88C7'},
+    {label:'No PQ needed – not ready yet', num:c.noNot, color:'#9CCBEA'},
+    {label:'Need PQ? not filled in', num:blankT, color:'#B7C2CE'},
+  ];
+  document.getElementById('linesTotal').textContent = total;
+  const row = (sw,label,n)=>`<div class="lines-row"><span class="sw" style="background:${sw}"></span><b>${n}</b> ${esc(label)}</div>`;
+  document.getElementById('linesLegend').innerHTML =
+    `<div class="lines-group" style="border-color:#1F9D65"><div class="lines-group-head">${needT}<span>need PQ</span></div>${row('#1F9D65','ready to sell (qualified)',c.needReady)}${row('#D98A15','not ready yet',c.needNot)}</div>`+
+    `<div class="lines-group" style="border-color:#1E88C7"><div class="lines-group-head">${noT}<span>do not need PQ</span></div>${row('#1E88C7','ready to sell (agreement signed)',c.noReady)}${row('#9CCBEA','not ready yet (agreement not signed)',c.noNot)}</div>`+
+    (blankT>0 ? `<div class="lines-group"><div class="lines-group-head">${blankT}<span>"Need PQ?" not filled in</span></div>${row('#B7C2CE','of which ready to sell (qualified)',c.blankReady)}</div>` : '');
+  if(chartLinesInstance) chartLinesInstance.destroy();
+  chartLinesInstance = new Chart(document.getElementById('chartLines'), {
+    type:'doughnut',
+    data:{ labels:segs.map(s=>s.label), datasets:[{ data:segs.map(s=>s.num), backgroundColor:segs.map(s=>s.color), borderWidth:2, borderColor:'#FFFFFF' }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}`}} } }
+  });
 }
 
 function renderMiniDash(){
@@ -1465,20 +1576,25 @@ function renderMiniDash(){
 
   // funnel: first 4 stages as circles; the last stage (Qualified) gets its own big box
   const exact = n => DATA_PQ.filter(r=>r.stage===n).length;
+  const M = computeStageMovement();
   renderFunnelSVG('miniFunnelSvg', [
-    {label:'Ready to Start', sub:'in progress', count:exact(1), done:false},
-    {label:'Study In Progress', sub:'in progress', count:exact(2), done:false},
-    {label:'Matrix Done', sub:'in progress', count:exact(3), done:false},
-    {label:'PQ Submitted', sub:'in progress', count:exact(4), done:false},
-  ], 700, true);
+    {label:'Ready to Start', sub:'in progress', count:exact(1), done:false, moveIn:M.mv[1].in, moveOut:M.mv[1].out},
+    {label:'Study In Progress', sub:'in progress', count:exact(2), done:false, moveIn:M.mv[2].in, moveOut:M.mv[2].out},
+    {label:'Matrix Done', sub:'in progress', count:exact(3), done:false, moveIn:M.mv[3].in, moveOut:M.mv[3].out},
+    {label:'PQ Submitted', sub:'in progress', count:exact(4), done:false, moveIn:M.mv[4].in, moveOut:M.mv[4].out},
+  ], 740, true);
+  document.getElementById('moveDays').textContent = MOVE_DAYS;
+  document.getElementById('miniQMove').textContent = M.mv[5].in>0 ? ('+'+M.mv[5].in+' this period') : '0 this period';
+  document.getElementById('miniMoveNote').textContent = M.missing>0 ? (M.missing+' product(s) have no entry date for their current stage, so their movement is not counted.') : '';
   document.getElementById('miniQualified').textContent = exact(5);
 
   document.getElementById('miniSalesTarget').textContent = SALES_TARGET;
   const rts = computeReadyToSell();
   document.getElementById('miniReady').textContent = rts.total;
   document.getElementById('miniReadyCap').textContent = rts.qualified+' qualified + '+rts.noPq+' signed with no PQ needed';
-  document.querySelector('.mini-ready').title = rts.items.join('\n') || 'None yet';
+  document.querySelector('.mini-ready').title = 'COUNTED:\n'+(rts.items.join('\n')||'None yet') + (rts.skipped.length ? '\n\nNOT COUNTED (check these):\n'+rts.skipped.join('\n') : '');
   const cs = document.getElementById('catalogSizeTxt'); if(cs) cs.textContent = total;
+  renderProductLinesPie();
 }
 
 function renderTargets(){
