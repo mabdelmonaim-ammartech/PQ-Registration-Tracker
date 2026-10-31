@@ -327,7 +327,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v45 · 31 Oct 2026, 12:30</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v46 · 31 Oct 2026, 12:20</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -1694,8 +1694,13 @@ function fmtCompact(n){
   if(a>=1e3) return CURRENCY+(n/1e3).toFixed(1)+'K';
   return CURRENCY+Math.round(n);
 }
+function salesGetter(row){
+  const map = {};
+  Object.keys(row).forEach(k => { map[norm(k).toUpperCase()] = row[k]; });
+  return (label) => blank(map[label.toUpperCase()]);
+}
 function mapSalesRow(row){
-  const g = makeGetter(row);
+  const g = salesGetter(row);
   const name = g('Target Product') || g('Product') || '—';
   return {
     po: g('PO S.N'), client: g('CLIENT'), supplier: g('SUPPLIER'),
@@ -1707,9 +1712,9 @@ function mapSalesRow(row){
 async function loadSalesSafe(){
   try{
     const raw = await fetchCSV(SALES_CSV_URL);
-    const keys = raw.length ? Object.keys(raw[0]).map(norm) : [];
-    if(raw.length && !keys.includes('PO AMOUNT')){
-      return {rows:[], err:'The sales link is not pointing at the sales tab (no "PO AMOUNT" column found). Publish the sales tab as CSV and use its link (with its gid) in SALES_CSV_URL.'};
+    const keys = raw.length ? Object.keys(raw[0]).map(k=>norm(k).toUpperCase()) : [];
+    if(!raw.length || !keys.includes('PO AMOUNT')){
+      return {rows:[], err:'No "PO AMOUNT" column found in the sales link. Columns it does have: '+(keys.filter(Boolean).slice(0,12).join(', ')||'(none — empty sheet)')+'. If this is not the sales tab, use the sales tab link with its gid in SALES_CSV_URL.'};
     }
     return {rows: raw.map(mapSalesRow).filter(r=> r.amt!==null && r.amt>0 && (r.client||r.supplier||r.po)), err:''};
   }catch(e){ return {rows:[], err:'Could not load the sales sheet: '+(e.message||String(e))}; }
