@@ -327,7 +327,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v46 · 31 Oct 2026, 12:20</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v47 · 31 Oct 2026, 12:25</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -1675,7 +1675,7 @@ function renderMiniDash(){
 // ============================================================
 // SALES (Company Performance page) — one row per PO line
 // ============================================================
-const SALES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSWZEn_sU14OWjk58yZUzvLuAjbiPi7jlpf4AuT_coLodNewo0r2LRvajoayL028A/pub?output=csv";
+const SALES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSWZEn_sU14OWjk58yZUzvLuAjbiPi7jlpf4AuT_coLodNewo0r2LRvajoayL028A/pub?gid=1310295920&single=true&output=csv";
 const LARGE_PO = 1000000;   // orders above this are hidden from the charts unless the checkbox is ticked
 const CURRENCY = '';        // e.g. 'SAR ' — shown in front of money values
 let DATA_SALES = [], SALES_ERROR = '', salesPage = 1, salesCharts = {};
