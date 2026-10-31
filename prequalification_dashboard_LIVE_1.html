@@ -212,6 +212,20 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .chart-wrap{position:relative; height:260px;}
 
 
+
+/* ---- Sales ---- */
+.sales-grid{display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:24px;}
+.sales-tall{height:300px;}
+.sales-ctrl{align-items:center; gap:18px; margin-bottom:10px;}
+.sales-check{font-family:var(--font-mono); font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:8px; cursor:pointer;}
+.sales-check input{flex:none; min-width:0; width:auto; margin:0;}
+.sales-hidden-note{font-family:var(--font-mono); font-size:11.5px; color:var(--text-dim);}
+.sales-select{font-family:inherit; font-size:inherit; font-weight:inherit; color:inherit; background:transparent; border:none; border-bottom:2px dashed var(--cyan-dim); cursor:pointer; padding:0 2px;}
+#tableSales td.num, #tableSales th, #tableSales td.nw{white-space:nowrap;}
+#tableSales td.num{text-align:right; font-family:var(--font-mono);}
+.sales-kpis{margin-top:0;}
+@media (max-width:1000px){ .sales-grid{grid-template-columns:1fr;} }
+
 /* ---- Targets mini dashboard ---- */
 .mini-dash{margin-top:0;}
 .mini-grid{display:grid; grid-template-columns:260px 1fr 200px; grid-template-areas:"pie funnel qual" "pie bottom bottom"; gap:18px;}
@@ -313,7 +327,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v44 · 17 Oct 2026, 12:50</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v45 · 31 Oct 2026, 12:30</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -321,7 +335,8 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 </header>
 
 <nav class="page-tabs">
-  <button class="page-tab active" id="tabTgBtn" data-page="tg">Targets</button>
+  <button class="page-tab active" id="tabCpBtn" data-page="cp">Company Performance</button>
+  <button class="page-tab" id="tabTgBtn" data-page="tg">Targets</button>
   <button class="page-tab" id="tabAgBtn" data-page="ag">Agreements &amp; Registration</button>
   <button class="page-tab" id="tabPqBtn" data-page="pq">PQ Follow Up</button>
 </nav>
@@ -466,8 +481,8 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </section>
   </div>
 
-  <!-- ============ TARGETS PAGE ============ -->
-  <div id="pageTg" class="page">
+  <!-- ============ COMPANY PERFORMANCE PAGE ============ -->
+  <div id="pageCp" class="page">
 
     <section class="panel mini-dash">
       <div class="mini-grid">
@@ -516,7 +531,63 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
       </div>
     </section>
 
-    <h2 class="target-section-title">Agreements &amp; Registration</h2>
+
+    <h2 class="target-section-title">Sales</h2>
+    <div id="salesNote" class="tg-warning" style="display:none;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span></span>
+    </div>
+    <section class="kpi-strip sales-kpis" id="kpiStripSales"></section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Sales by month</h2>
+        <span class="panel-sub">PO value by PO date, with profit where cost is known</span>
+      </div>
+      <div class="toolbar sales-ctrl">
+        <label class="sales-check"><input type="checkbox" id="salesIncludeLarge"> Include orders over 1M in the charts</label>
+        <span class="sales-hidden-note" id="salesHiddenNote"></span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartSalesMonth"></canvas></div>
+    </section>
+
+    <div class="sales-grid">
+      <section class="panel" style="margin-top:0;">
+        <div class="panel-head"><h2>Sales by product</h2><span class="panel-sub">Blue = PO value, green = profit</span></div>
+        <div class="chart-wrap sales-tall"><canvas id="chartSalesProduct"></canvas></div>
+      </section>
+      <section class="panel" style="margin-top:0;">
+        <div class="panel-head"><h2>Sales by <select id="salesGroupBy" class="sales-select"><option value="client">client</option><option value="supplier">supplier</option></select></h2><span class="panel-sub">PO value</span></div>
+        <div class="chart-wrap sales-tall"><canvas id="chartSalesGroup"></canvas></div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Purchase orders</h2>
+        <span class="panel-sub" id="salesTableSub"></span>
+      </div>
+      <div class="toolbar"><input type="text" id="salesSearch" placeholder="Search PO, client, supplier, product, status…"></div>
+      <div class="table-wrap" id="tableWrapSales">
+        <table id="tableSales">
+          <thead><tr>
+            <th>PO #</th><th>Date</th><th>Client</th><th>Supplier</th><th>Product</th><th>Qty</th><th>PO Amount</th><th>Cost</th><th>Profit</th><th>Status</th>
+          </tr></thead>
+          <tbody id="bodySales"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <button class="pag-btn" id="salesPrev">&lt;</button>
+        <span class="pag-info" id="salesPagInfo">1 / 1</span>
+        <button class="pag-btn" id="salesNext">&gt;</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ TARGETS PAGE ============ -->
+  <div id="pageTg" class="page" style="display:none;">
+
+    <h2 class="target-section-title" style="margin-top:24px;">Agreements &amp; Registration</h2>
 
     <section class="panel">
       <div class="panel-head">
@@ -616,7 +687,7 @@ const MONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:
 
 let DATA_AG = [];
 let DATA_PQ = [];
-let activePage = 'tg';
+let activePage = 'cp';
 
 function fetchCSV(url){
   return new Promise((resolve, reject) => {
@@ -844,13 +915,16 @@ function docButton(label, url){
 // ---------- page switching ----------
 function switchPage(p){
   activePage = p;
+  document.getElementById('pageCp').style.display = p==='cp' ? '' : 'none';
   document.getElementById('pageAg').style.display = p==='ag' ? '' : 'none';
   document.getElementById('pagePq').style.display = p==='pq' ? '' : 'none';
   document.getElementById('pageTg').style.display = p==='tg' ? '' : 'none';
+  document.getElementById('tabCpBtn').classList.toggle('active', p==='cp');
   document.getElementById('tabAgBtn').classList.toggle('active', p==='ag');
   document.getElementById('tabPqBtn').classList.toggle('active', p==='pq');
   document.getElementById('tabTgBtn').classList.toggle('active', p==='tg');
 }
+document.getElementById('tabCpBtn').addEventListener('click', ()=>switchPage('cp'));
 document.getElementById('tabAgBtn').addEventListener('click', ()=>switchPage('ag'));
 document.getElementById('tabPqBtn').addEventListener('click', ()=>switchPage('pq'));
 document.getElementById('tabTgBtn').addEventListener('click', ()=>switchPage('tg'));
@@ -1597,6 +1671,148 @@ function renderMiniDash(){
   renderProductLinesPie();
 }
 
+
+// ============================================================
+// SALES (Company Performance page) — one row per PO line
+// ============================================================
+const SALES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSWZEn_sU14OWjk58yZUzvLuAjbiPi7jlpf4AuT_coLodNewo0r2LRvajoayL028A/pub?output=csv";
+const LARGE_PO = 1000000;   // orders above this are hidden from the charts unless the checkbox is ticked
+const CURRENCY = '';        // e.g. 'SAR ' — shown in front of money values
+let DATA_SALES = [], SALES_ERROR = '', salesPage = 1, salesCharts = {};
+const SALES_PAGE_SIZE = 20;
+
+function parseNum(v){
+  const t = String(v==null?'':v).replace(/[,\s]/g,'');
+  if(!t || /^n\/?a$/i.test(t)) return null;
+  const n = parseFloat(t); return isNaN(n) ? null : n;
+}
+function fmtMoney(n){ return n==null ? '—' : CURRENCY + n.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtCompact(n){
+  if(n==null) return '—';
+  const a = Math.abs(n);
+  if(a>=1e6) return CURRENCY+(n/1e6).toFixed(2)+'M';
+  if(a>=1e3) return CURRENCY+(n/1e3).toFixed(1)+'K';
+  return CURRENCY+Math.round(n);
+}
+function mapSalesRow(row){
+  const g = makeGetter(row);
+  const name = g('Target Product') || g('Product') || '—';
+  return {
+    po: g('PO S.N'), client: g('CLIENT'), supplier: g('SUPPLIER'),
+    date: parseSheetDate(g('PO Date')), qty: parseNum(g('PO QTY')),
+    amt: parseNum(g('PO AMOUNT')), cost: parseNum(g('TOTAL COST')), profit: parseNum(g('TOTAL PROFIT')),
+    status: g('P.O STATUS'), partner: g('Partner'), name: name,
+  };
+}
+async function loadSalesSafe(){
+  try{
+    const raw = await fetchCSV(SALES_CSV_URL);
+    const keys = raw.length ? Object.keys(raw[0]).map(norm) : [];
+    if(raw.length && !keys.includes('PO AMOUNT')){
+      return {rows:[], err:'The sales link is not pointing at the sales tab (no "PO AMOUNT" column found). Publish the sales tab as CSV and use its link (with its gid) in SALES_CSV_URL.'};
+    }
+    return {rows: raw.map(mapSalesRow).filter(r=> r.amt!==null && r.amt>0 && (r.client||r.supplier||r.po)), err:''};
+  }catch(e){ return {rows:[], err:'Could not load the sales sheet: '+(e.message||String(e))}; }
+}
+
+function renderSales(){
+  const note = document.getElementById('salesNote');
+  if(SALES_ERROR){
+    note.style.display = ''; note.querySelector('span').textContent = SALES_ERROR;
+    document.getElementById('kpiStripSales').innerHTML = '';
+    document.getElementById('bodySales').innerHTML = '';
+    Object.values(salesCharts).forEach(c=>c&&c.destroy()); salesCharts = {};
+    return;
+  }
+  note.style.display = 'none';
+  const R = DATA_SALES;
+  const total = R.reduce((a,r)=>a+r.amt,0);
+  const poSet = new Set(R.map((r,i)=> r.po ? r.po+'|'+r.client : 'line'+i));
+  const clients = new Set(R.map(r=>r.client).filter(Boolean));
+  const pl = R.filter(r=>r.cost!==null && r.profit!==null);
+  const profit = pl.reduce((a,r)=>a+r.profit,0), plAmt = pl.reduce((a,r)=>a+r.amt,0);
+  const margin = plAmt>0 ? (profit/plAmt*100).toFixed(1) : '—';
+  const st = k => R.filter(r=>(r.status||'').toLowerCase().includes(k)).length;
+  const delivered = st('deliver'), open = st('open');
+  const noPo = R.filter(r=>!r.po).length;
+  const cards = [
+    {num: fmtCompact(total), label:'Total PO value', sub: R.length+' PO lines', accent:'var(--cyan)'},
+    {num: poSet.size, label:'Purchase orders', sub:'from '+clients.size+' clients'+(noPo?' · '+noPo+' line(s) without a PO number':''), accent:'var(--cyan)'},
+    {num: fmtCompact(profit), label:'Profit', sub: margin+'% margin · cost known on '+pl.length+' of '+R.length+' lines', accent:'var(--green)'},
+    {num: delivered+' / '+open, label:'Delivered / Open', sub: (R.length-delivered-open)>0 ? (R.length-delivered-open)+' line(s) with no status' : 'all lines have a status', accent:'var(--green)'},
+  ];
+  document.getElementById('kpiStripSales').innerHTML = cards.map(c=>`
+    <div class="kpi-card" style="--kpi-accent:${c.accent}"><div class="kpi-num">${c.num}</div><div class="kpi-label">${c.label}</div><div class="kpi-sub">${c.sub}</div></div>`).join('');
+  renderSalesCharts();
+  salesPage = 1; renderSalesTable();
+}
+
+function renderSalesCharts(){
+  if(SALES_ERROR) return;
+  const incl = document.getElementById('salesIncludeLarge').checked;
+  const R = DATA_SALES.filter(r=> incl || r.amt<=LARGE_PO);
+  const hidden = DATA_SALES.length - R.length;
+  document.getElementById('salesHiddenNote').textContent = hidden>0 ? hidden+' order(s) over '+fmtCompact(LARGE_PO)+' hidden from the charts (still counted in the totals and the table)' : '';
+  Object.values(salesCharts).forEach(c=>c&&c.destroy()); salesCharts = {};
+  const BLUE='#1E88C7', GREEN='#1F9D65';
+  const axisMoney = {ticks:{callback:v=>fmtCompact(v)}, beginAtZero:true};
+  const moneyTip = {callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtMoney(ctx.raw)}`}};
+
+  // ---- by month ----
+  const dated = R.filter(r=>r.date);
+  if(dated.length){
+    const ks = dated.map(r=>r.date.getFullYear()*12+r.date.getMonth());
+    const lo = Math.min(...ks), hi = Math.max(...ks);
+    const labels=[], amt=[], prf=[];
+    for(let k=lo;k<=hi;k++){
+      labels.push(new Date(Math.floor(k/12),k%12,1).toLocaleDateString('en-GB',{month:'short',year:'2-digit'}));
+      const rows = dated.filter(r=>r.date.getFullYear()*12+r.date.getMonth()===k);
+      amt.push(rows.reduce((a,r)=>a+r.amt,0));
+      prf.push(rows.filter(r=>r.cost!==null&&r.profit!==null).reduce((a,r)=>a+r.profit,0));
+    }
+    salesCharts.month = new Chart(document.getElementById('chartSalesMonth'),{type:'bar',
+      data:{labels, datasets:[{label:'PO value',data:amt,backgroundColor:BLUE,borderRadius:4},{label:'Profit',data:prf,backgroundColor:GREEN,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,scales:{y:axisMoney},plugins:{legend:{position:'top',align:'end'},tooltip:moneyTip}}});
+  }
+  // ---- by product ----
+  const groupBy = (keyFn)=>{ const m=new Map(); R.forEach(r=>{ const k=keyFn(r)||'—'; const o=m.get(k)||{amt:0,profit:0}; o.amt+=r.amt; if(r.cost!==null&&r.profit!==null) o.profit+=r.profit; m.set(k,o); }); return [...m.entries()].sort((a,b)=>b[1].amt-a[1].amt); };
+  const prod = groupBy(r=>r.name).slice(0,8);
+  const short = t => t.length>34 ? t.slice(0,33)+'…' : t;
+  salesCharts.product = new Chart(document.getElementById('chartSalesProduct'),{type:'bar',
+    data:{labels:prod.map(p=>short(p[0])), datasets:[{label:'PO value',data:prod.map(p=>p[1].amt),backgroundColor:BLUE,borderRadius:4},{label:'Profit',data:prod.map(p=>p[1].profit),backgroundColor:GREEN,borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:axisMoney, y:{ticks:{autoSkip:false}}},plugins:{legend:{display:false},tooltip:{callbacks:{title:items=>prod[items[0].dataIndex][0],label:moneyTip.callbacks.label}}}}});
+  // ---- by client / supplier ----
+  const by = document.getElementById('salesGroupBy').value;
+  const grp = groupBy(r=>r[by]);
+  salesCharts.group = new Chart(document.getElementById('chartSalesGroup'),{type:'bar',
+    data:{labels:grp.map(p=>short(p[0])), datasets:[{label:'PO value',data:grp.map(p=>p[1].amt),backgroundColor:BLUE,borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:axisMoney, y:{ticks:{autoSkip:false}}},plugins:{legend:{display:false},tooltip:moneyTip}}});
+}
+
+function renderSalesTable(){
+  const q = (document.getElementById('salesSearch').value||'').trim().toLowerCase();
+  let rows = DATA_SALES.filter(r=> !q || [r.po,r.client,r.supplier,r.name,r.status,r.partner].join(' ').toLowerCase().includes(q));
+  rows = rows.slice().sort((a,b)=>(b.date||0)-(a.date||0));
+  const pages = Math.max(1, Math.ceil(rows.length/SALES_PAGE_SIZE));
+  if(salesPage>pages) salesPage = pages;
+  const slice = rows.slice((salesPage-1)*SALES_PAGE_SIZE, salesPage*SALES_PAGE_SIZE);
+  const badge = s => { const l=(s||'').toLowerCase(); const cls = l.includes('deliver')?'badge-signed':(l.includes('open')?'badge-negotiation':'badge-notstarted'); return `<span class="badge ${cls}">${esc(s||'—')}</span>`; };
+  const d = x => x ? x.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+  document.getElementById('bodySales').innerHTML = slice.map(r=>`<tr>
+    <td class="nw">${esc(r.po||'—')}</td><td class="nw">${d(r.date)}</td><td>${esc(r.client||'—')}</td><td>${esc(r.supplier||'—')}</td><td>${esc(r.name)}</td>
+    <td class="num">${r.qty==null?'—':r.qty}</td><td class="num">${fmtMoney(r.amt)}</td><td class="num">${fmtMoney(r.cost)}</td><td class="num">${fmtMoney(r.profit)}</td><td>${badge(r.status)}</td></tr>`).join('')
+    || '<tr><td colspan="10" style="text-align:center; padding:24px; color:var(--text-dim);">No purchase orders match.</td></tr>';
+  document.getElementById('salesPagInfo').textContent = salesPage+' / '+pages;
+  document.getElementById('salesPrev').disabled = salesPage<=1;
+  document.getElementById('salesNext').disabled = salesPage>=pages;
+  document.getElementById('salesTableSub').textContent = rows.length+' PO line'+(rows.length===1?'':'s');
+}
+document.getElementById('salesIncludeLarge').addEventListener('change', renderSalesCharts);
+document.getElementById('salesGroupBy').addEventListener('change', renderSalesCharts);
+document.getElementById('salesSearch').addEventListener('input', ()=>{ salesPage=1; renderSalesTable(); });
+document.getElementById('salesPrev').addEventListener('click', ()=>{ salesPage--; renderSalesTable(); });
+document.getElementById('salesNext').addEventListener('click', ()=>{ salesPage++; renderSalesTable(); });
+
 function renderTargets(){
   const year = new Date().getFullYear();
   const TARGET = 10;
@@ -1808,7 +2024,8 @@ async function loadData(){
   document.getElementById('mainContent').style.display = 'none';
   document.getElementById('lastUpdated').textContent = 'Loading…';
   try{
-    const [agRaw, pqRaw] = await Promise.all([fetchCSV(AGREEMENTS_CSV_URL), fetchCSV(PQ_CSV_URL), loadCatalogSize()]);
+    const [agRaw, pqRaw, , salesRes] = await Promise.all([fetchCSV(AGREEMENTS_CSV_URL), fetchCSV(PQ_CSV_URL), loadCatalogSize(), loadSalesSafe()]);
+    DATA_SALES = salesRes.rows; SALES_ERROR = salesRes.err;
     DATA_AG = agRaw.filter(r=>{ const g=makeGetter(r); return g('Partner'); }).map(mapAgRow).reverse();
     DATA_PQ = pqRaw.filter(r=>{ const g=makeGetter(r); return g('Partner'); }).map(mapPqRow).reverse();
 
@@ -1817,6 +2034,8 @@ async function loadData(){
 
     computeKpisPq(); renderPqFlow(); renderAlertsPq(); populateFiltersPq(); renderTablePq();
     renderDq('dqListPq','dqCountPq', computeDqPq(), 'pq');
+
+    try{ renderSales(); }catch(salesErr){ console.error('Sales rendering failed:', salesErr); const n=document.getElementById('salesNote'); n.style.display=''; n.querySelector('span').textContent='Could not render the sales section: '+(salesErr.message||String(salesErr)); }
 
     try{
       renderTargets();
