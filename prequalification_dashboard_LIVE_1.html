@@ -236,7 +236,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 
 /* ---- Targets mini dashboard ---- */
 .mini-dash{margin-top:0;}
-.mini-grid{display:grid; grid-template-columns:260px 1fr 200px; grid-template-areas:"pie funnel qual" "pie bottom bottom"; gap:18px;}
+.mini-grid{display:grid; grid-template-columns:260px 1fr 200px; grid-template-areas:"pie fag bag" "pie fpq bpq" "pie fsl bsl"; gap:18px;}
 .mini-box{border:1px solid var(--line); border-radius:12px; background:var(--bg-panel); padding:16px 18px;}
 .mini-title{font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); font-weight:600; margin-bottom:8px;}
 .mini-pie{grid-area:pie; display:flex; flex-direction:column; align-items:center;}
@@ -259,7 +259,12 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .mini-qmove{font-family:var(--font-display); font-size:20px; font-weight:700; color:#1F9D65; margin-top:6px;}
 #miniFunnelSvg .flow-node-label{font-size:14.5px;}
 #miniFunnelSvg .flow-node-sub{font-size:13px;}
-.mini-grid{grid-template-columns:260px 1fr 200px;}
+.mini-pie{justify-content:center;}
+.mini-done{display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; border:2px solid var(--green); box-shadow:0 0 14px rgba(31,157,101,0.2);}
+.mini-done .mini-big{font-size:56px; color:var(--green);}
+.mini-row2{display:grid; grid-template-columns:260px 1fr; gap:18px; margin-top:18px;}
+.mini-row2 .mini-lines{margin-top:0;}
+.mini-target{display:flex; flex-direction:column; justify-content:center;}
 
 .mini-qualified{grid-area:qual; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; border:2px solid var(--green); box-shadow:0 0 14px rgba(31,157,101,0.25);}
 .mini-qualified .mini-big{font-size:84px; color:var(--green);}
@@ -279,8 +284,8 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .mini-ready{border-color:var(--green);}
 .mini-ready .mini-big{color:var(--green);}
 @media (max-width:1000px){
-  .mini-grid{grid-template-columns:1fr; grid-template-areas:"pie" "funnel" "qual" "bottom";}
-  .mini-bottom{grid-template-columns:1fr;}
+  .mini-grid{grid-template-columns:1fr; grid-template-areas:"pie" "fag" "bag" "fpq" "bpq" "fsl" "bsl";}
+  .mini-row2{grid-template-columns:1fr;}
 }
 .coverage-layout{display:flex; align-items:center; gap:36px; flex-wrap:wrap;}
 .coverage-chart-wrap{height:320px; width:320px; flex-shrink:0;}
@@ -335,7 +340,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v49 · 3 Nov 2026, 00:45</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v50 · 3 Nov 2026, 01:30</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -501,34 +506,43 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
             <canvas id="chartCoverage"></canvas>
             <div class="mini-pie-center"><span class="mini-pie-total" id="miniPieTotal">–</span><span class="mini-pie-cap">products</span></div>
           </div>
-          <div class="mini-pie-legend" id="miniPieLegend"></div>
         </div>
-        <div class="mini-box mini-funnel">
-          <div class="mini-title">PQ process funnel</div>
-          <div class="mini-legend"><b class="g">+n</b> entered this stage &nbsp;·&nbsp; <b class="r">−n</b> left this stage &nbsp;·&nbsp; last <span id="moveDays">7</span> days</div>
+
+        <div class="mini-box mini-funnel" style="grid-area:fag;" id="boxAgFunnel">
+          <div class="mini-title">Agreement funnel</div>
+          <div id="miniAgSvg"></div>
+        </div>
+        <div class="mini-box mini-done" style="grid-area:bag;" id="boxAgDone">
+          <div class="mini-title">Agreement done</div>
+          <div class="mini-big" id="miniAgDone">–</div>
+        </div>
+
+        <div class="mini-box mini-funnel" style="grid-area:fpq;" id="boxPqFunnel">
+          <div class="mini-title">PQ funnel</div>
           <div id="miniFunnelSvg"></div>
-          <div class="mini-move-note" id="miniMoveNote"></div>
         </div>
-        <div class="mini-box mini-qualified">
+        <div class="mini-box mini-done" style="grid-area:bpq;" id="boxQualified">
           <div class="mini-title">Qualified</div>
           <div class="mini-big" id="miniQualified">–</div>
-          <div class="mini-cap">products qualified</div>
           <div class="mini-qmove" id="miniQMove"></div>
         </div>
-        <div class="mini-bottom">
-          <div class="mini-box mini-target">
-            <div class="mini-title">Sales target</div>
-            <div class="mini-big" id="miniSalesTarget">–</div>
-            <div class="mini-cap">unique products to sell (set by sales team)</div>
-          </div>
-          <div class="mini-box mini-ready">
-            <div class="mini-title">Ready to sell</div>
-            <div class="mini-big" id="miniReady">–</div>
-            <div class="mini-cap" id="miniReadyCap"></div>
-          </div>
+
+        <div class="mini-box mini-funnel" style="grid-area:fsl;" id="boxSalesFunnel">
+          <div class="mini-title">Sales funnel</div>
+          <div id="miniSalesSvg"></div>
+        </div>
+        <div class="mini-box mini-done mini-ready" style="grid-area:bsl;" id="boxReady">
+          <div class="mini-title">Ready to sell</div>
+          <div class="mini-big" id="miniReady">–</div>
         </div>
       </div>
-      <div class="mini-box mini-lines">
+
+      <div class="mini-row2">
+        <div class="mini-box mini-target" id="boxSalesTarget">
+          <div class="mini-title">Sales target</div>
+          <div class="mini-big" id="miniSalesTarget">–</div>
+        </div>
+        <div class="mini-box mini-lines">
         <div class="mini-title">Product lines we are working on</div>
         <div class="mini-lines-body">
           <div class="mini-pie-wrap">
@@ -537,6 +551,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
           </div>
           <div class="lines-legend" id="linesLegend"></div>
         </div>
+      </div>
       </div>
     </section>
 
@@ -958,7 +973,7 @@ document.getElementById('tabTgBtn').addEventListener('click', ()=>switchPage('tg
 // ---------- funnel ----------
 function renderFunnelSVG(containerId, stages, wOverride, mini){
   const n = stages.length;
-  const w=wOverride||1180,h=mini?190:168, margin = mini?92:(n<=4?130:95), step=(w-margin*2)/(n-1), cy=mini?78:66, r = mini?40:(n<=4?42:38);
+  const w=wOverride||1180,h=mini?134:168, margin = mini?92:(n<=4?130:95), step=(w-margin*2)/(n-1), cy=mini?56:66, r = mini?36:(n<=4?42:38);
   let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">`;
   for(let i=0;i<n-1;i++){
     const x1=margin+step*i+r, x2=margin+step*(i+1)-r;
@@ -968,15 +983,17 @@ function renderFunnelSVG(containerId, stages, wOverride, mini){
   stages.forEach((s,i)=>{
     const cx=margin+step*i, lit=s.count>0;
     const circleClass = 'flow-node-circle' + (lit?' lit':'') + (s.done && lit?' done':'');
+    svg += `<g><title>${esc(s.tip||s.label)}</title>`;
     svg += `<circle cx="${cx}" cy="${cy}" r="${r}" class="${circleClass}"/>`;
-    svg += `<text x="${cx}" y="${cy+6}" text-anchor="middle" class="flow-node-count${s.done?' done':''}">${s.count}</text>`;
+    svg += `<text x="${cx}" y="${cy+6}" text-anchor="middle" class="flow-node-count${s.done?' done':''}">${s.countText!==undefined?s.countText:s.count}</text>`;
     if(s.moveIn!==undefined){
       const fmt=(n,sign)=> n>0 ? sign+n : '0';
       svg += `<text x="${cx-r-7}" y="${cy+8}" text-anchor="end" class="flow-move ${s.moveIn>0?'in':'zero'}">${fmt(s.moveIn,'+')}</text>`;
       if(s.moveOut!==undefined) svg += `<text x="${cx+r+7}" y="${cy+8}" text-anchor="start" class="flow-move ${s.moveOut>0?'out':'zero'}">${fmt(s.moveOut,'−')}</text>`;
     }
     svg += `<text x="${cx}" y="${cy+r+20}" text-anchor="middle" class="flow-node-label">${esc(s.label)}</text>`;
-    svg += `<text x="${cx}" y="${cy+r+34}" text-anchor="middle" class="flow-node-sub">${esc(s.sub)}</text>`;
+    if(s.sub) svg += `<text x="${cx}" y="${cy+r+34}" text-anchor="middle" class="flow-node-sub">${esc(s.sub)}</text>`;
+    svg += `</g>`;
   });
   svg += `</svg>`;
   document.getElementById(containerId).innerHTML = svg;
@@ -1655,17 +1672,28 @@ function renderProductLinesPie(){
   });
 }
 
+function renderMiniSalesFunnel(){
+  const ok = salesUnlocked && !SALES_ERROR && DATA_SALES.length>0;
+  const R = DATA_SALES, st = k => R.filter(r=>(r.status||'').toLowerCase().includes(k)).length;
+  const lockedTip = 'Locked — unlock the Sales tab to see sales numbers';
+  const mk = (label, n, tip) => ok ? {label, count:n, done:false, tip: label+' — '+tip} : {label, count:0, countText:'–', done:false, tip: label+' — '+lockedTip};
+  renderFunnelSVG('miniSalesSvg', [
+    mk('PO Lines', R.length, 'all purchase-order lines'),
+    mk('Open', st('open'), 'orders not delivered yet'),
+    mk('Delivered', st('deliver'), 'orders delivered'),
+  ], 740, true);
+  document.getElementById('boxSalesFunnel').title = ok ? '' : lockedTip;
+}
+
 function renderMiniDash(){
   const total = TARGET_CATALOG_SIZE;
-  const inPq = DATA_PQ.length;
+  const inPq = DATA_PQ.filter(r=>r.target_product).length; // PQ rows that have a target product
   const remaining = Math.max(0, total-inPq);
   document.getElementById('miniPieTotal').textContent = total;
   const segs = [
     {label:'Product lines in PQ list', num:inPq, color:'#1E88C7'},
     {label:'Not in PQ list yet', num:remaining, color:'#CFE1F0'},
   ];
-  document.getElementById('miniPieLegend').innerHTML = segs.map(s=>
-    `<div class="lg"><span class="sw" style="background:${s.color}"></span><span><b>${s.num}</b> ${esc(s.label)} (${((s.num/total)*100).toFixed(1)}%)</span></div>`).join('');
   if(chartCoverageInstance) chartCoverageInstance.destroy();
   chartCoverageInstance = new Chart(document.getElementById('chartCoverage'), {
     type:'doughnut',
@@ -1674,25 +1702,39 @@ function renderMiniDash(){
       plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw} (${((ctx.raw/total)*100).toFixed(1)}%)`}} } }
   });
 
-  // funnel: first 4 stages as circles; the last stage (Qualified) gets its own big box
+  // ---- agreement funnel: 4 circles + "Agreement done" box (Registered Companies) ----
+  const exAg = n => DATA_AG.filter(r=>r.stage===n).length;
+  renderFunnelSVG('miniAgSvg', [
+    {label:'Study', count:exAg(1), done:false, tip:'Study — in progress'},
+    {label:'Agreement Negotiation', count:exAg(2), done:false, tip:'Agreement Negotiation — in progress'},
+    {label:'SE Registration', count:exAg(3), done:false, tip:'SE Registration — in progress'},
+    {label:'NG Registration', count:exAg(4), done:false, tip:'NG Registration — '+exAg(4)+' pending to start'},
+  ], 740, true);
+  document.getElementById('miniAgDone').textContent = exAg(5);
+  document.getElementById('boxAgDone').title = 'Registered companies — agreement and registration work is done';
+
+  // ---- PQ funnel: first 4 stages as circles; the last stage (Qualified) gets its own big box ----
   const exact = n => DATA_PQ.filter(r=>r.stage===n).length;
   const M = computeStageMovement();
+  const mvTip = (n,label) => label+' — in progress. Last '+MOVE_DAYS+' days: +'+M.mv[n].in+' entered, −'+M.mv[n].out+' left (+n entered, −n left the stage)'+(M.missing>0 && n===1 ? '. Note: '+M.missing+' product(s) have no entry date for their current stage, so their movement is not counted.' : '');
   renderFunnelSVG('miniFunnelSvg', [
-    {label:'Ready to Start', sub:'in progress', count:exact(1), done:false, moveIn:M.mv[1].in, moveOut:M.mv[1].out},
-    {label:'Study In Progress', sub:'in progress', count:exact(2), done:false, moveIn:M.mv[2].in, moveOut:M.mv[2].out},
-    {label:'Matrix Done', sub:'in progress', count:exact(3), done:false, moveIn:M.mv[3].in, moveOut:M.mv[3].out},
-    {label:'PQ Submitted', sub:'in progress', count:exact(4), done:false, moveIn:M.mv[4].in, moveOut:M.mv[4].out},
+    {label:'Ready to Start', count:exact(1), done:false, moveIn:M.mv[1].in, moveOut:M.mv[1].out, tip:mvTip(1,'Ready to Start')},
+    {label:'Study In Progress', count:exact(2), done:false, moveIn:M.mv[2].in, moveOut:M.mv[2].out, tip:mvTip(2,'Study In Progress')},
+    {label:'Matrix Done', count:exact(3), done:false, moveIn:M.mv[3].in, moveOut:M.mv[3].out, tip:mvTip(3,'Matrix Done')},
+    {label:'PQ Submitted', count:exact(4), done:false, moveIn:M.mv[4].in, moveOut:M.mv[4].out, tip:mvTip(4,'PQ Submitted')},
   ], 740, true);
-  document.getElementById('moveDays').textContent = MOVE_DAYS;
   document.getElementById('miniQMove').textContent = M.mv[5].in>0 ? ('+'+M.mv[5].in+' this period') : '0 this period';
-  document.getElementById('miniMoveNote').textContent = M.missing>0 ? (M.missing+' product(s) have no entry date for their current stage, so their movement is not counted.') : '';
   document.getElementById('miniQualified').textContent = exact(5);
+  document.getElementById('boxQualified').title = 'Products qualified';
+
+  // ---- sales funnel (numbers only after the Sales tab is unlocked) ----
+  renderMiniSalesFunnel();
 
   document.getElementById('miniSalesTarget').textContent = SALES_TARGET;
+  document.getElementById('boxSalesTarget').title = 'Unique products to sell (target set by the sales team)';
   const rts = computeReadyToSell();
   document.getElementById('miniReady').textContent = rts.total;
-  document.getElementById('miniReadyCap').textContent = rts.qualified+' qualified + '+rts.noPq+' signed with no PQ needed';
-  document.querySelector('.mini-ready').title = 'COUNTED:\n'+(rts.items.join('\n')||'None yet') + (rts.skipped.length ? '\n\nNOT COUNTED (check these):\n'+rts.skipped.join('\n') : '');
+  document.getElementById('boxReady').title = rts.qualified+' qualified + '+rts.noPq+' signed with no PQ needed\n\nCOUNTED:\n'+(rts.items.join('\n')||'None yet') + (rts.skipped.length ? '\n\nNOT COUNTED (check these):\n'+rts.skipped.join('\n') : '');
   const cs = document.getElementById('catalogSizeTxt'); if(cs) cs.textContent = total;
   renderProductLinesPie();
 }
@@ -1718,6 +1760,7 @@ async function sha256Hex(str){
 async function loadAndRenderSales(){
   const res = await loadSalesSafe();
   DATA_SALES = res.rows; SALES_ERROR = res.err;
+  try{ renderMiniSalesFunnel(); }catch(e){}
   try{ renderSales(); }catch(e){ console.error('Sales rendering failed:', e); const n=document.getElementById('salesNote'); n.style.display=''; n.querySelector('span').textContent='Could not render the sales section: '+(e.message||String(e)); }
 }
 function showSalesContent(){
@@ -1736,6 +1779,7 @@ function lockSales(){
   document.getElementById('salesGate').style.display = '';
   document.getElementById('salesPass').value = '';
   document.getElementById('salesGateErr').textContent = '';
+  try{ renderMiniSalesFunnel(); }catch(e){}
 }
 async function tryUnlockSales(){
   const err = document.getElementById('salesGateErr');
