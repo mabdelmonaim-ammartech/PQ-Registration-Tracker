@@ -214,6 +214,14 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 
 
 /* ---- Sales ---- */
+.sales-gate{max-width:420px; margin:60px auto; text-align:center; display:flex; flex-direction:column; gap:12px; align-items:center;}
+.sales-gate-title{font-family:var(--font-display); font-size:26px; font-weight:700;}
+.sales-gate-sub{font-family:var(--font-mono); font-size:12.5px; color:var(--text-muted);}
+.sales-gate input{width:100%; max-width:280px; background:var(--bg-panel-raised); border:1px solid var(--line); color:var(--text); font-size:14px; padding:10px 12px; border-radius:8px; outline:none; text-align:center;}
+.sales-gate input:focus{border-color:var(--cyan-dim);}
+.sales-unlock{padding:9px 28px;}
+.sales-gate-err{font-family:var(--font-mono); font-size:12px; color:var(--red); min-height:16px;}
+.sales-head{display:flex; align-items:center; gap:12px;}
 .sales-grid{display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:24px;}
 .sales-tall{height:300px;}
 .sales-ctrl{align-items:center; gap:18px; margin-bottom:10px;}
@@ -327,7 +335,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v47 · 31 Oct 2026, 12:25</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v49 · 3 Nov 2026, 00:45</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -339,6 +347,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
   <button class="page-tab" id="tabTgBtn" data-page="tg">Targets</button>
   <button class="page-tab" id="tabAgBtn" data-page="ag">Agreements &amp; Registration</button>
   <button class="page-tab" id="tabPqBtn" data-page="pq">PQ Follow Up</button>
+  <button class="page-tab" id="tabSalesBtn" data-page="sales">Sales</button>
 </nav>
 
 <div id="loadingBanner" class="loading-banner">
@@ -532,7 +541,20 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </section>
 
 
-    <h2 class="target-section-title">Sales</h2>
+  </div>
+
+  <!-- ============ SALES PAGE (password protected) ============ -->
+  <div id="pageSales" class="page" style="display:none;">
+    <div id="salesGate" class="panel sales-gate">
+      <div class="sales-gate-title">Sales</div>
+      <div class="sales-gate-sub">Enter the password to view sales data</div>
+      <input type="password" id="salesPass" placeholder="Password" autocomplete="off">
+      <button class="btn-ghost sales-unlock" id="salesUnlockBtn">Unlock</button>
+      <div class="sales-gate-err" id="salesGateErr"></div>
+    </div>
+    <div id="salesContent" style="display:none;">
+      <div class="sales-head"><h2 class="target-section-title" style="margin-top:24px; flex:1;">Sales</h2><button class="btn-ghost small" id="salesLockBtn">Lock</button></div>
+
     <div id="salesNote" class="tg-warning" style="display:none;">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span></span>
@@ -582,6 +604,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
         <button class="pag-btn" id="salesNext">&gt;</button>
       </div>
     </section>
+    </div>
   </div>
 
   <!-- ============ TARGETS PAGE ============ -->
@@ -916,15 +939,18 @@ function docButton(label, url){
 function switchPage(p){
   activePage = p;
   document.getElementById('pageCp').style.display = p==='cp' ? '' : 'none';
+  document.getElementById('pageSales').style.display = p==='sales' ? '' : 'none';
   document.getElementById('pageAg').style.display = p==='ag' ? '' : 'none';
   document.getElementById('pagePq').style.display = p==='pq' ? '' : 'none';
   document.getElementById('pageTg').style.display = p==='tg' ? '' : 'none';
   document.getElementById('tabCpBtn').classList.toggle('active', p==='cp');
+  document.getElementById('tabSalesBtn').classList.toggle('active', p==='sales');
   document.getElementById('tabAgBtn').classList.toggle('active', p==='ag');
   document.getElementById('tabPqBtn').classList.toggle('active', p==='pq');
   document.getElementById('tabTgBtn').classList.toggle('active', p==='tg');
 }
 document.getElementById('tabCpBtn').addEventListener('click', ()=>switchPage('cp'));
+document.getElementById('tabSalesBtn').addEventListener('click', ()=>switchPage('sales'));
 document.getElementById('tabAgBtn').addEventListener('click', ()=>switchPage('ag'));
 document.getElementById('tabPqBtn').addEventListener('click', ()=>switchPage('pq'));
 document.getElementById('tabTgBtn').addEventListener('click', ()=>switchPage('tg'));
@@ -1675,11 +1701,59 @@ function renderMiniDash(){
 // ============================================================
 // SALES (Company Performance page) — one row per PO line
 // ============================================================
-const SALES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSWZEn_sU14OWjk58yZUzvLuAjbiPi7jlpf4AuT_coLodNewo0r2LRvajoayL028A/pub?gid=1310295920&single=true&output=csv";
+const SALES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQCTlzIcUba5uozPnDIrHdSG5MqvBah_yyB6cY1EN1L3IsPrthjwbzjonarbOzjq1eHJqgAFDXaZr2i/pub?gid=0&single=true&output=csv";
 const LARGE_PO = 1000000;   // orders above this are hidden from the charts unless the checkbox is ticked
 const CURRENCY = '';        // e.g. 'SAR ' — shown in front of money values
 let DATA_SALES = [], SALES_ERROR = '', salesPage = 1, salesCharts = {};
 const SALES_PAGE_SIZE = 20;
+
+// ---- password gate (client-side only — see note in the chat: it hides the page, it is not real security) ----
+const SALES_PASS_HASH = "d98ea3021292bcbe9371af2dadb18f249f6976b89e421f52f4a2b6deaee3bdbb"; // SHA-256 of the password; the password itself is not stored in this file
+let salesUnlocked = false;
+try{ salesUnlocked = sessionStorage.getItem('salesUnlocked')==='1'; }catch(e){}
+async function sha256Hex(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function loadAndRenderSales(){
+  const res = await loadSalesSafe();
+  DATA_SALES = res.rows; SALES_ERROR = res.err;
+  try{ renderSales(); }catch(e){ console.error('Sales rendering failed:', e); const n=document.getElementById('salesNote'); n.style.display=''; n.querySelector('span').textContent='Could not render the sales section: '+(e.message||String(e)); }
+}
+function showSalesContent(){
+  document.getElementById('salesGate').style.display = 'none';
+  document.getElementById('salesContent').style.display = '';
+  loadAndRenderSales();
+}
+function lockSales(){
+  salesUnlocked = false;
+  try{ sessionStorage.removeItem('salesUnlocked'); }catch(e){}
+  DATA_SALES = [];
+  Object.values(salesCharts).forEach(c=>c&&c.destroy()); salesCharts = {};
+  document.getElementById('kpiStripSales').innerHTML = '';
+  document.getElementById('bodySales').innerHTML = '';
+  document.getElementById('salesContent').style.display = 'none';
+  document.getElementById('salesGate').style.display = '';
+  document.getElementById('salesPass').value = '';
+  document.getElementById('salesGateErr').textContent = '';
+}
+async function tryUnlockSales(){
+  const err = document.getElementById('salesGateErr');
+  const pass = document.getElementById('salesPass').value;
+  if(!window.crypto || !crypto.subtle){ err.textContent = 'This browser cannot check the password here (open the dashboard over https).'; return; }
+  if((await sha256Hex(pass)) === SALES_PASS_HASH){
+    salesUnlocked = true;
+    try{ sessionStorage.setItem('salesUnlocked','1'); }catch(e){}
+    err.textContent = ''; document.getElementById('salesPass').value = '';
+    showSalesContent();
+  } else {
+    err.textContent = 'Incorrect password';
+    document.getElementById('salesPass').select();
+  }
+}
+document.getElementById('salesUnlockBtn').addEventListener('click', tryUnlockSales);
+document.getElementById('salesPass').addEventListener('keydown', e=>{ if(e.key==='Enter') tryUnlockSales(); });
+document.getElementById('salesLockBtn').addEventListener('click', lockSales);
 
 function parseNum(v){
   const t = String(v==null?'':v).replace(/[,\s]/g,'');
@@ -2029,8 +2103,7 @@ async function loadData(){
   document.getElementById('mainContent').style.display = 'none';
   document.getElementById('lastUpdated').textContent = 'Loading…';
   try{
-    const [agRaw, pqRaw, , salesRes] = await Promise.all([fetchCSV(AGREEMENTS_CSV_URL), fetchCSV(PQ_CSV_URL), loadCatalogSize(), loadSalesSafe()]);
-    DATA_SALES = salesRes.rows; SALES_ERROR = salesRes.err;
+    const [agRaw, pqRaw] = await Promise.all([fetchCSV(AGREEMENTS_CSV_URL), fetchCSV(PQ_CSV_URL), loadCatalogSize()]);
     DATA_AG = agRaw.filter(r=>{ const g=makeGetter(r); return g('Partner'); }).map(mapAgRow).reverse();
     DATA_PQ = pqRaw.filter(r=>{ const g=makeGetter(r); return g('Partner'); }).map(mapPqRow).reverse();
 
@@ -2040,7 +2113,7 @@ async function loadData(){
     computeKpisPq(); renderPqFlow(); renderAlertsPq(); populateFiltersPq(); renderTablePq();
     renderDq('dqListPq','dqCountPq', computeDqPq(), 'pq');
 
-    try{ renderSales(); }catch(salesErr){ console.error('Sales rendering failed:', salesErr); const n=document.getElementById('salesNote'); n.style.display=''; n.querySelector('span').textContent='Could not render the sales section: '+(salesErr.message||String(salesErr)); }
+    if(salesUnlocked) showSalesContent(); // sales data is only fetched after the password is accepted
 
     try{
       renderTargets();
