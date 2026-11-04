@@ -273,6 +273,18 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .mini-big{font-family:var(--font-display); font-size:52px; font-weight:700; line-height:1.05;}
 .mini-cap{font-family:var(--font-mono); font-size:11.5px; color:var(--text-dim); margin-top:4px;}
 .mini-lines{margin-top:18px;}
+.cov-kpis{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-bottom:12px;}
+.cov-kpi{border:1px solid var(--line); border-radius:12px; padding:14px 18px; background:#fff;}
+.cov-kpi b{display:block; font-size:38px; color:var(--navy,#14304d); line-height:1.1;}
+.cov-kpi span{font-size:12px; color:#5a6b7d;}
+.cov-note{font-size:12px; color:#8a5a00; margin-bottom:10px;}
+.cov-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+.cov-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+.cov-copy{border:1px solid #1E88C7; background:#fff; color:#1E88C7; border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer;}
+.cov-copy:hover{background:#EAF4FB;}
+.cov-wrap{max-height:420px;}
+.cov-table{min-width:0;}
+.cov-table td,.cov-table th{padding:6px 10px; font-size:12.5px; text-align:left;}
 .mini-lines-body{display:flex; align-items:center; gap:40px; flex-wrap:wrap;}
 .lines-legend{flex:1; min-width:300px; display:flex; flex-direction:column; gap:14px;}
 .lines-group{border-left:4px solid var(--line); padding-left:14px;}
@@ -286,6 +298,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 @media (max-width:1000px){
   .mini-grid{grid-template-columns:1fr; grid-template-areas:"pie" "fag" "bag" "fpq" "bpq" "fsl" "bsl";}
   .mini-row2{grid-template-columns:1fr;}
+  .cov-kpis,.cov-grid{grid-template-columns:1fr;}
 }
 .coverage-layout{display:flex; align-items:center; gap:36px; flex-wrap:wrap;}
 .coverage-chart-wrap{height:320px; width:320px; flex-shrink:0;}
@@ -340,7 +353,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v50 · 3 Nov 2026, 01:30</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v52 · 4 Nov 2026, 13:20</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -543,15 +556,33 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
           <div class="mini-big" id="miniSalesTarget">–</div>
         </div>
         <div class="mini-box mini-lines">
-        <div class="mini-title">Product lines we are working on</div>
+        <div class="mini-title">Unique products we are working on</div>
         <div class="mini-lines-body">
           <div class="mini-pie-wrap">
             <canvas id="chartLines"></canvas>
-            <div class="mini-pie-center"><span class="mini-pie-total" id="linesTotal">–</span><span class="mini-pie-cap">product lines</span></div>
+            <div class="mini-pie-center"><span class="mini-pie-total" id="linesTotal">–</span><span class="mini-pie-cap">products</span></div>
           </div>
           <div class="lines-legend" id="linesLegend"></div>
         </div>
       </div>
+      </div>
+    </section>
+    <section class="panel" id="coveragePanel" style="margin-top:18px;">
+      <div class="cov-kpis">
+        <div class="cov-kpi"><b id="covWorking">–</b><span>unique products with a vendor in PQ</span></div>
+        <div class="cov-kpi"><b id="covMulti">–</b><span>products with multiple vendors</span></div>
+        <div class="cov-kpi"><b id="covNone">–</b><span>products with no vendor yet</span></div>
+      </div>
+      <div class="cov-note" id="covNote"></div>
+      <div class="cov-grid">
+        <div>
+          <div class="cov-head"><span class="mini-title" style="margin:0">Products with multiple vendors</span><button class="cov-copy" id="covCopyMulti">Copy for Excel</button></div>
+          <div class="table-wrap cov-wrap"><table class="cov-table" id="covTableMulti"></table></div>
+        </div>
+        <div>
+          <div class="cov-head"><span class="mini-title" style="margin:0">Products with no vendor yet</span><button class="cov-copy" id="covCopyNone">Copy for Excel</button></div>
+          <div class="table-wrap cov-wrap"><table class="cov-table" id="covTableNone"></table></div>
+        </div>
       </div>
     </section>
 
@@ -694,9 +725,10 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 /* ============================================================
    CONFIG — one published CSV link per tab.
    ============================================================ */
-const AGREEMENTS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSWZEn_sU14OWjk58yZUzvLuAjbiPi7jlpf4AuT_coLodNewo0r2LRvajoayL028A/pub?gid=1402571685&single=true&output=csv";
-const CATALOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSWZEn_sU14OWjk58yZUzvLuAjbiPi7jlpf4AuT_coLodNewo0r2LRvajoayL028A/pub?gid=360101104&single=true&output=csv"; // Sheet1 — column J = target product list
-const PQ_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSWZEn_sU14OWjk58yZUzvLuAjbiPi7jlpf4AuT_coLodNewo0r2LRvajoayL028A/pub?gid=31467374&single=true&output=csv";
+const AGREEMENTS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQukX9yMh5mvq8e9ZVUrktrr6b136oa2NFnNU91MLYz8FX09gCEOWkeBrelAWO3NPI2OlWAF2YUljb6/pub?gid=1402571685&single=true&output=csv";
+const CATALOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQukX9yMh5mvq8e9ZVUrktrr6b136oa2NFnNU91MLYz8FX09gCEOWkeBrelAWO3NPI2OlWAF2YUljb6/pub?gid=167618344&single=true&output=csv"; // "250 Product" tab — the "Product" column is the product list
+const STAGE_LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQukX9yMh5mvq8e9ZVUrktrr6b136oa2NFnNU91MLYz8FX09gCEOWkeBrelAWO3NPI2OlWAF2YUljb6/pub?gid=488592127&single=true&output=csv"; // "Stage Log" tab — filled daily by the Apps Script
+const PQ_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQukX9yMh5mvq8e9ZVUrktrr6b136oa2NFnNU91MLYz8FX09gCEOWkeBrelAWO3NPI2OlWAF2YUljb6/pub?gid=31467374&single=true&output=csv";
 
 
 const $ = (sel, ctx=document) => ctx.querySelector(sel);
@@ -811,8 +843,21 @@ function computeAgStage(r){
 
   return 1; // Not Started / default
 }
+// Reads the wording typed in the "PQ Stage" column (same rules as the Apps Script). 0 = blank / not recognised.
+function stageFromText(v){
+  const t = String(v||'').toLowerCase().trim();
+  if(!t) return 0;
+  if(t.indexOf('qualified')>-1) return 5;
+  if(t.indexOf('submit')>-1) return 4;      // also "PQ submited"
+  if(t.indexOf('matrix')>-1) return 3;
+  if(t.indexOf('study')>-1) return 2;
+  if(t.indexOf('categor')>-1 || t.indexOf('ready to start')>-1) return 1;
+  return 0;
+}
 function computePqStage(r){
   if(!r.target_product) return null; // no target product = data-entry error, excluded from funnel entirely
+  const typed = stageFromText(r.pq_stage_typed);
+  if(typed) return typed;            // the team's "PQ Stage" column is the source of truth when filled in
   if(r.qualified==='Yes') return 5; // final — Listed products are also Qualified, so they land here too, not a separate bucket
   if(r.pq_submit_date) return 4;
   if(r.compliance_status==='Comply' || r.compliance_status==='Partially Comply') return 3;
@@ -866,6 +911,7 @@ function mapPqRow(row, i){
     responsible: g('Responsible Person'),
     need_pq: g('Need PQ?') || g('Need PQ') || g('Needs PQ?') || g('Needs PQ'),
     target_product: g('Target Product'),
+    pq_stage_typed: g('PQ Stage'),
     compliance_status: g('Compliance Matrix Status'),
     compliance_matrix_done_date: g('Compliance Matrix Done Date'),
     business_line: normBL(g('Business Line')),
@@ -1567,36 +1613,83 @@ function renderEngineerAgTargets(year){
 }
 
 let chartCoverageInstance = null;
+let CATALOG_NAMES = [];   // names from Sheet1 column J
+let PRODUCTS = {list:[], byKey:new Map()};   // unique products built from the PQ rows
 
 // Counts Sheet1 column J (J2 down) — every non-blank cell is one target product.
 async function loadCatalogSize(){
   try{
     const rows = await new Promise((res,rej)=>Papa.parse(CATALOG_CSV_URL,{download:true, header:false, skipEmptyLines:false,
       complete:r=>res(r.data), error:e=>rej(e)}));
-    let n = 0;
-    for(let i=1;i<rows.length;i++){ const v=(rows[i][9]||'').trim(); if(v) n++; } // column J = index 9, skip header row 1
-    if(n>0) TARGET_CATALOG_SIZE = n;
+    // find the header cell "Product" (within the first rows); fall back to the old layout (column J, from row 2)
+    let hr=-1, hc=-1;
+    for(let i=0;i<Math.min(rows.length,6) && hr<0;i++){
+      const j = (rows[i]||[]).findIndex(c=>String(c).replace(/\s+/g,' ').trim().toLowerCase()==='product');
+      if(j>=0){ hr=i; hc=j; }
+    }
+    if(hr<0){ hr=0; hc=9; }
+    let n = 0; const names = [];
+    for(let i=hr+1;i<rows.length;i++){ const v=String((rows[i]||[])[hc]||'').trim(); if(v){ n++; names.push(v); } }
+    if(n>0){ TARGET_CATALOG_SIZE = n; CATALOG_NAMES = names; }
   }catch(e){ console.error('Could not read Sheet1 column J — using fallback count', e); }
 }
 
-// "Ready to sell" = every qualified product + products whose agreement is Signed and that don't need PQ at all.
+// ---------- UNIQUE PRODUCTS ----------
+// One product = one Target Product. A product can have several PQ rows (one per vendor); it is counted once,
+// at the stage of its most advanced vendor. A PQ row naming several catalog products counts for each of them.
+const normName = s => String(s||'').replace(/\s+/g,' ').trim().toLowerCase();
+function splitTargets(t){
+  const txt = normName(t); if(!txt) return [];
+  const found = []; let rest = txt;
+  [...new Set(CATALOG_NAMES.map(normName))].filter(Boolean).sort((a,b)=>b.length-a.length).forEach(k=>{
+    if(rest.includes(k)){ found.push(k); rest = rest.split(k).join(' '); }
+  });
+  return found.length ? found : [txt];
+}
+function buildProducts(){
+  const disp = new Map(CATALOG_NAMES.map(n=>[normName(n), n.replace(/\s+/g,' ').trim()]));
+  const byKey = new Map();
+  DATA_PQ.forEach(r=>{
+    if(!r.target_product) return;
+    splitTargets(r.target_product).forEach(k=>{
+      if(!byKey.has(k)) byKey.set(k, {key:k, name:disp.get(k)||r.target_product.replace(/\s+/g,' ').trim(), inCatalog:disp.has(k), rows:[]});
+      byKey.get(k).rows.push(r);
+    });
+  });
+  byKey.forEach(p=>{
+    p.stage = Math.max(...p.rows.map(r=>r.stage||1));
+    p.partners = [...new Set(p.rows.map(r=>(r.partner||'?').trim()))];
+    const nps = p.rows.map(r=>(r.need_pq||'').trim().toLowerCase());
+    p.need_pq = nps.includes('yes') ? 'yes' : nps.includes('no') ? 'no' : '';
+    p.ready = false;
+  });
+  return {list:[...byKey.values()], byKey};
+}
+const STAGE_NAMES = ['Ready to Start','Study In Progress','Matrix Done','PQ Submitted','Qualified'];
+
+// "Ready to sell" (per unique product) = a vendor is Qualified, or a vendor's agreement is Signed and the product needs no PQ.
 function computeReadyToSell(){
-  // Step 1: PQ row is Qualified -> ready to sell.
-  // Step 2: otherwise take the row's Agreement SN, find that agreement in the Agreements sheet;
-  //         if it is Signed AND the product does not need PQ ("Need PQ?" = No) -> ready to sell.
   const key = v => String(v||'').replace(/\s+/g,' ').trim().toUpperCase();
   const agBySN = new Map(DATA_AG.map(r=>[key(r.sr), r]));
   const items = [], skipped = []; let qualified = 0, noPq = 0;
-  DATA_PQ.forEach(r=>{
-    const name = (r.partner||'?')+' – '+(r.target_product||r.product||'?');
-    if(r.qualified==='Yes'){ qualified++; items.push(name+' (qualified)'); return; }
-    if(!r.agreement_sn){ skipped.push(name+': no Agreement SN on this PQ row'); return; }
-    const ag = agBySN.get(key(r.agreement_sn));
-    if(!ag){ skipped.push(name+': Agreement SN "'+r.agreement_sn+'" not found in Agreements sheet'); return; }
-    if(ag.agreement_status!=='Signed') return; // agreement not signed yet — expected, not listed
-    if(/^no$/i.test(r.need_pq||'')){ noPq++; items.push(name+' (agreement signed, no PQ needed)'); }
-    else skipped.push(name+': agreement signed but Need PQ? is "'+(r.need_pq||'blank')+'" (must be No)');
+  PRODUCTS.list.forEach(p=>{
+    let q=false, np=false; const notes=[];
+    p.rows.forEach(r=>{
+      const who = r.partner||'?';
+      if(r.qualified==='Yes'){ q=true; return; }
+      if(!r.agreement_sn){ notes.push(who+': no Agreement SN on this PQ row'); return; }
+      const ag = agBySN.get(key(r.agreement_sn));
+      if(!ag){ notes.push(who+': Agreement SN "'+r.agreement_sn+'" not found in Agreements sheet'); return; }
+      if(ag.agreement_status!=='Signed') return;
+      if(/^no$/i.test(r.need_pq||'')) np=true;
+      else notes.push(who+': agreement signed but Need PQ? is "'+(r.need_pq||'blank')+'" (must be No)');
+    });
+    p.ready = q || np;
+    if(q){ qualified++; items.push(p.name+' (qualified)'); }
+    else if(np){ noPq++; items.push(p.name+' (agreement signed, no PQ needed)'); }
+    else notes.forEach(n=>skipped.push(p.name+' – '+n));
   });
+  DATA_PQ.forEach(r=>{ if(!r.target_product && r.qualified==='Yes') skipped.push((r.partner||'?')+' – '+(r.product||'?')+': qualified but has no Target Product, so it is not counted'); });
   return {qualified, noPq, total: qualified+noPq, items, skipped};
 }
 
@@ -1612,14 +1705,55 @@ function pqEntryDates(r){
     5: parseSheetDate(r.qualified_date),
   };
 }
+// ---------- STAGE LOG (written daily by the Apps Script) ----------
+let STAGE_LOG = null;   // null = could not be read; array = loaded
+async function loadStageLog(){
+  try{
+    const rows = await fetchCSV(STAGE_LOG_CSV_URL);
+    STAGE_LOG = rows.map((r,i)=>{ const g=makeGetter(r);
+      return {i, date:parseSheetDate(g('Date')), sn:(g('PQ SN.')||'').trim(), from:stageFromText(g('From stage')), to:stageFromText(g('To stage'))}; })
+      .filter(e=>e.date && e.sn);
+  }catch(e){ STAGE_LOG = null; console.error('Stage Log could not be read — using date columns for movement', e); }
+}
+// Product-level movement from the log: a product "enters" a stage when its best stage (across vendors) becomes that stage.
+function computeMovementFromLog(){
+  const now = new Date(); const from = new Date(now.getTime() - MOVE_DAYS*86400000);
+  const mv = {1:{in:0,out:0},2:{in:0,out:0},3:{in:0,out:0},4:{in:0,out:0},5:{in:0,out:0}};
+  const evBySn = new Map();
+  STAGE_LOG.filter(e=>e.date>from && e.date<=now).forEach(e=>{ if(!evBySn.has(e.sn)) evBySn.set(e.sn,[]); evBySn.get(e.sn).push(e); });
+  PRODUCTS.list.forEach(p=>{
+    const rowStage = new Map(); const events = [];
+    p.rows.forEach(r=>{
+      const evs = evBySn.get((r.sr||'').trim());
+      if(evs && evs.length){ rowStage.set(r.sr, evs.slice().sort((x,y)=>x.date-y.date||x.i-y.i)[0].from); events.push(...evs); }
+      else rowStage.set(r.sr, r.stage||0);
+    });
+    if(!events.length) return;
+    events.sort((x,y)=>x.date-y.date||x.i-y.i);
+    const best = () => Math.max(0, ...rowStage.values());
+    let prev = best();
+    events.forEach(e=>{
+      const sn = p.rows.find(r=>(r.sr||'').trim()===e.sn).sr;
+      rowStage.set(sn, e.to);
+      const now_ = best();
+      if(now_!==prev){ if(prev>0) mv[prev].out++; if(now_>0) mv[now_].in++; prev = now_; }
+    });
+  });
+  return {mv, missing:0, source:'log'};
+}
 function computeStageMovement(){
+  if(STAGE_LOG!==null) return computeMovementFromLog();
+  const r = computeStageMovementFromDates(); r.source='dates'; return r;
+}
+function computeStageMovementFromDates(){
   const now = new Date(); const from = new Date(now.getTime() - MOVE_DAYS*86400000);
   const inW = d => d && d>from && d<=now;
   const mv = {1:{in:0,out:0},2:{in:0,out:0},3:{in:0,out:0},4:{in:0,out:0},5:{in:0,out:0}};
   let missing = 0;
-  DATA_PQ.forEach(r=>{
-    if(r.stage===null || r.stage===undefined) return;
-    const d = pqEntryDates(r);
+  PRODUCTS.list.forEach(p=>{
+    // product entry date of a stage = earliest date among its vendors' rows
+    const d = {}; for(let k=1;k<=5;k++){ const ds = p.rows.map(r=>pqEntryDates(r)[k]).filter(Boolean); d[k] = ds.length ? new Date(Math.min(...ds)) : null; }
+    const r = {stage:p.stage};
     if(!d[r.stage]) missing++; // sits in a stage but has no entry date -> can't be placed in time
     for(let k=1;k<=5;k++){
       if(!d[k]) continue;
@@ -1634,21 +1768,15 @@ function computeStageMovement(){
 }
 
 let chartLinesInstance = null;
-// Pie of every PQ product line: Needs PQ / No PQ needed / not filled in, each split into ready to sell vs not yet.
-// Ready to sell = same rule as the Ready to Sell box (qualified, or signed agreement + no PQ needed).
+// Doughnut of every unique product with a vendor: Needs PQ / No PQ needed / not filled in, each split into ready to sell vs not yet.
 function renderProductLinesPie(){
-  const key = v => String(v||'').replace(/\s+/g,' ').trim().toUpperCase();
-  const agBySN = new Map(DATA_AG.map(r=>[key(r.sr), r]));
   const c = {needReady:0, needNot:0, noReady:0, noNot:0, blankReady:0, blankNot:0};
-  DATA_PQ.forEach(r=>{
-    const np = (r.need_pq||'').trim().toLowerCase();
-    const ag = r.agreement_sn ? agBySN.get(key(r.agreement_sn)) : null;
-    const ready = r.qualified==='Yes' || (np==='no' && ag && ag.agreement_status==='Signed');
-    if(np==='yes') ready ? c.needReady++ : c.needNot++;
-    else if(np==='no') ready ? c.noReady++ : c.noNot++;
-    else ready ? c.blankReady++ : c.blankNot++;
+  PRODUCTS.list.forEach(p=>{
+    if(p.need_pq==='yes') p.ready ? c.needReady++ : c.needNot++;
+    else if(p.need_pq==='no') p.ready ? c.noReady++ : c.noNot++;
+    else p.ready ? c.blankReady++ : c.blankNot++;
   });
-  const total = DATA_PQ.length;
+  const total = PRODUCTS.list.length;
   const needT = c.needReady+c.needNot, noT = c.noReady+c.noNot, blankT = c.blankReady+c.blankNot;
   const segs = [
     {label:'Needs PQ – ready to sell', num:c.needReady, color:'#1F9D65'},
@@ -1672,6 +1800,33 @@ function renderProductLinesPie(){
   });
 }
 
+function tableToTSV(rows){ return rows.map(r=>r.map(c=>String(c).replace(/[\t\r\n]+/g,' ')).join('\t')).join('\n'); }
+function fillCovTable(id, head, rows, btnId){
+  document.getElementById(id).innerHTML = '<thead><tr>'+head.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+
+    (rows.length ? rows.map(r=>'<tr>'+r.map(c=>'<td>'+esc(String(c))+'</td>').join('')+'</tr>').join('') : '<tr><td colspan="'+head.length+'">None</td></tr>')+'</tbody>';
+  const btn = document.getElementById(btnId);
+  btn.onclick = async ()=>{
+    const tsv = tableToTSV([head, ...rows]);
+    try{ await navigator.clipboard.writeText(tsv); btn.textContent='Copied ✓'; }
+    catch(e){ const ta=document.createElement('textarea'); ta.value=tsv; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy'); btn.textContent='Copied ✓';}catch(_){btn.textContent='Copy failed';} ta.remove(); }
+    setTimeout(()=>btn.textContent='Copy for Excel',1500);
+  };
+}
+function renderCoveragePanel(){
+  const multi = PRODUCTS.list.filter(p=>p.partners.length>1).sort((a,b)=>b.partners.length-a.partners.length || a.name.localeCompare(b.name));
+  const have = new Set(PRODUCTS.byKey.keys());
+  const none = CATALOG_NAMES.filter(n=>!have.has(normName(n)));
+  const outside = PRODUCTS.list.filter(p=>!p.inCatalog);
+  document.getElementById('covWorking').textContent = PRODUCTS.list.length;
+  document.getElementById('covMulti').textContent = multi.length;
+  document.getElementById('covNone').textContent = CATALOG_NAMES.length ? none.length : '–';
+  document.getElementById('covNote').textContent = (CATALOG_NAMES.length ? '' : 'Product catalog (Sheet1 column J) could not be read, so the "no vendor" list is unavailable. ') +
+    (outside.length ? outside.length+' product(s) in the PQ list are not in the catalog list: '+outside.map(p=>p.name).join('; ') : '');
+  fillCovTable('covTableMulti', ['Product','Vendors','Partners','PQ rows','Best stage'],
+    multi.map(p=>[p.name, p.partners.length, p.partners.join(' / '), p.rows.length, STAGE_NAMES[p.stage-1]]), 'covCopyMulti');
+  fillCovTable('covTableNone', ['Product'], none.map(n=>[n]), 'covCopyNone');
+}
+
 function renderMiniSalesFunnel(){
   const ok = salesUnlocked && !SALES_ERROR && DATA_SALES.length>0;
   const R = DATA_SALES, st = k => R.filter(r=>(r.status||'').toLowerCase().includes(k)).length;
@@ -1686,13 +1841,14 @@ function renderMiniSalesFunnel(){
 }
 
 function renderMiniDash(){
+  PRODUCTS = buildProducts();
   const total = TARGET_CATALOG_SIZE;
-  const inPq = DATA_PQ.filter(r=>r.target_product).length; // PQ rows that have a target product
+  const inPq = PRODUCTS.list.length; // unique products that have at least one vendor row in PQ
   const remaining = Math.max(0, total-inPq);
   document.getElementById('miniPieTotal').textContent = total;
   const segs = [
-    {label:'Product lines in PQ list', num:inPq, color:'#1E88C7'},
-    {label:'Not in PQ list yet', num:remaining, color:'#CFE1F0'},
+    {label:'Unique products with a vendor in PQ', num:inPq, color:'#1E88C7'},
+    {label:'Products with no vendor yet', num:remaining, color:'#CFE1F0'},
   ];
   if(chartCoverageInstance) chartCoverageInstance.destroy();
   chartCoverageInstance = new Chart(document.getElementById('chartCoverage'), {
@@ -1714,9 +1870,9 @@ function renderMiniDash(){
   document.getElementById('boxAgDone').title = 'Registered companies — agreement and registration work is done';
 
   // ---- PQ funnel: first 4 stages as circles; the last stage (Qualified) gets its own big box ----
-  const exact = n => DATA_PQ.filter(r=>r.stage===n).length;
+  const exact = n => PRODUCTS.list.filter(p=>p.stage===n).length; // unique products at their best stage
   const M = computeStageMovement();
-  const mvTip = (n,label) => label+' — in progress. Last '+MOVE_DAYS+' days: +'+M.mv[n].in+' entered, −'+M.mv[n].out+' left (+n entered, −n left the stage)'+(M.missing>0 && n===1 ? '. Note: '+M.missing+' product(s) have no entry date for their current stage, so their movement is not counted.' : '');
+  const mvTip = (n,label) => label+' — in progress. Last '+MOVE_DAYS+' days: +'+M.mv[n].in+' entered, −'+M.mv[n].out+' left (+n entered, −n left the stage)'+(M.missing>0 && n===1 ? '. Note: '+M.missing+' product(s) have no entry date for their current stage, so their movement is not counted.' : '')+(M.source==='log' ? ' (source: Stage Log, one count per product)' : '');
   renderFunnelSVG('miniFunnelSvg', [
     {label:'Ready to Start', count:exact(1), done:false, moveIn:M.mv[1].in, moveOut:M.mv[1].out, tip:mvTip(1,'Ready to Start')},
     {label:'Study In Progress', count:exact(2), done:false, moveIn:M.mv[2].in, moveOut:M.mv[2].out, tip:mvTip(2,'Study In Progress')},
@@ -1737,6 +1893,7 @@ function renderMiniDash(){
   document.getElementById('boxReady').title = rts.qualified+' qualified + '+rts.noPq+' signed with no PQ needed\n\nCOUNTED:\n'+(rts.items.join('\n')||'None yet') + (rts.skipped.length ? '\n\nNOT COUNTED (check these):\n'+rts.skipped.join('\n') : '');
   const cs = document.getElementById('catalogSizeTxt'); if(cs) cs.textContent = total;
   renderProductLinesPie();
+  renderCoveragePanel();
 }
 
 
@@ -2147,7 +2304,7 @@ async function loadData(){
   document.getElementById('mainContent').style.display = 'none';
   document.getElementById('lastUpdated').textContent = 'Loading…';
   try{
-    const [agRaw, pqRaw] = await Promise.all([fetchCSV(AGREEMENTS_CSV_URL), fetchCSV(PQ_CSV_URL), loadCatalogSize()]);
+    const [agRaw, pqRaw] = await Promise.all([fetchCSV(AGREEMENTS_CSV_URL), fetchCSV(PQ_CSV_URL), loadCatalogSize(), loadStageLog()]);
     DATA_AG = agRaw.filter(r=>{ const g=makeGetter(r); return g('Partner'); }).map(mapAgRow).reverse();
     DATA_PQ = pqRaw.filter(r=>{ const g=makeGetter(r); return g('Partner'); }).map(mapPqRow).reverse();
 
