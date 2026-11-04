@@ -69,7 +69,7 @@ h1{font-family:var(--font-display); font-size:20px; font-weight:600; margin:0; l
 
 .flow-panel{margin-top:0;}
 #flowSvgWrapAg svg, #flowSvgWrapPq svg{width:100%; height:auto; display:block;}
-.flow-node-label{font-family:var(--font-mono); font-size:13px; fill:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em; font-weight:600;}
+.flow-node-label{font-family:var(--font-mono); font-size:13px; fill:#4B5563; text-transform:uppercase; letter-spacing:0.04em; font-weight:400;}
 .flow-node-sub{font-family:var(--font-mono); font-size:11.5px; fill:var(--text-dim);}
 .flow-node-count{font-family:var(--font-display); font-size:24px; font-weight:700; fill:var(--text);}
 .flow-line{stroke:var(--cyan-dim); stroke-width:2; fill:none;}
@@ -364,7 +364,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v55 · 4 Nov 2026, 16:40</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v56 · 4 Nov 2026, 17:05</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -1694,27 +1694,19 @@ const STAGE_NAMES = ['Categorized','Study In Progress','Matrix Done','PQ Submitt
 
 // "Ready to sell" (per unique product) = a vendor is Qualified, or a vendor's agreement is Signed and the product needs no PQ.
 function computeReadyToSell(){
-  const key = v => String(v||'').replace(/\s+/g,' ').trim().toUpperCase();
-  const agBySN = new Map(DATA_AG.map(r=>[key(r.sr), r]));
+  // Rule per unique product:
+  //  - "PQ done"        = a vendor row is Qualified = Yes and that row needs a PQ
+  //  - "no PQ needed"   = a vendor row says Need PQ? = No (those rows are also marked Qualified = Yes in the sheet)
+  // a product is counted once, as PQ done if both apply.
   const items = [], skipped = []; let qualified = 0, noPq = 0;
   PRODUCTS.list.forEach(p=>{
-    let q=false, np=false; const notes=[];
-    p.rows.forEach(r=>{
-      const who = r.partner||'?';
-      if(r.qualified==='Yes'){ q=true; return; }
-      if(!r.agreement_sn){ notes.push(who+': no Agreement SN on this PQ row'); return; }
-      const ag = agBySN.get(key(r.agreement_sn));
-      if(!ag){ notes.push(who+': Agreement SN "'+r.agreement_sn+'" not found in Agreements sheet'); return; }
-      if(ag.agreement_status!=='Signed') return;
-      if(/^no$/i.test(r.need_pq||'')) np=true;
-      else notes.push(who+': agreement signed but Need PQ? is "'+(r.need_pq||'blank')+'" (must be No)');
-    });
+    const q  = p.rows.some(r=>r.qualified==='Yes' && !/^no$/i.test(r.need_pq||''));
+    const np = p.rows.some(r=>/^no$/i.test(r.need_pq||''));
     p.ready = q || np;
-    if(q){ qualified++; items.push(p.name+' (qualified)'); }
-    else if(np){ noPq++; items.push(p.name+' (agreement signed, no PQ needed)'); }
-    else notes.forEach(n=>skipped.push(p.name+' – '+n));
+    if(q){ qualified++; items.push(p.name+' (PQ done)'); }
+    else if(np){ noPq++; items.push(p.name+' (no PQ needed)'); }
   });
-  DATA_PQ.forEach(r=>{ if(!r.target_product && r.qualified==='Yes') skipped.push((r.partner||'?')+' – '+(r.product||'?')+': qualified but has no Target Product, so it is not counted'); });
+  DATA_PQ.forEach(r=>{ if(!r.target_product && (r.qualified==='Yes' || /^no$/i.test(r.need_pq||''))) skipped.push((r.partner||'?')+' – '+(r.product||'?')+': ready, but has no Target Product, so it is not counted'); });
   return {qualified, noPq, total: qualified+noPq, items, skipped};
 }
 
@@ -1875,9 +1867,9 @@ function renderMiniSalesFunnel(){
   const rts = MINI_RTS;
   renderFunnelSVG('miniSalesSvg', [
     {label:'Ready to sell', count:rts.total, done:false,
-      tip:'Ready to sell — '+rts.qualified+' qualified + '+rts.noPq+' signed with no PQ needed\n\nCOUNTED:\n'+(rts.items.join('\n')||'None yet')+(rts.skipped.length?'\n\nNOT COUNTED (check these):\n'+rts.skipped.join('\n'):'')},
+      tip:'Ready to sell — '+rts.qualified+' PQ done + '+rts.noPq+' no PQ needed\n\nCOUNTED:\n'+(rts.items.join('\n')||'None yet')+(rts.skipped.length?'\n\nNOT COUNTED (check these):\n'+rts.skipped.join('\n'):'')},
     {label:'RFQ received', count:0, countText:'–', done:false, tip:'RFQ received — data not connected yet'},
-  ], 560, true);
+  ], 520, true);
   // PO received (final box) + weekly new POs
   const now = new Date(), from = new Date(now.getTime()-MOVE_DAYS*86400000);
   const newPo = ok ? DATA_SALES.filter(r=>r.date && r.date>from && r.date<=now).length : 0;
@@ -1888,11 +1880,18 @@ function renderMiniSalesFunnel(){
 }
 // Big pie under the products pie: the sales target split by where those products are now
 function renderSalesTargetPie(){
-  const b = productBuckets();
-  const segs = [{label:'Ready to sell', num:b.ready, color:STAGE_COLORS[5]}];
-  for(let n=1;n<=4;n++) segs.push({label:PQ_NAMES[n-1], num:b[n], color:STAGE_COLORS[n]});
+  // the target split by SALES stages: ready to sell -> RFQ received -> PO received (the rest has not reached sales yet)
+  const ready = MINI_RTS.total;
+  const rfq = 0;   // RFQ data is not connected yet
+  const poOk = salesUnlocked && !SALES_ERROR && DATA_SALES.length>0;
+  const po = poOk ? DATA_SALES.length : 0;
+  const segs = [
+    {label:'Ready to sell', num:ready, color:'#1F9D65'},
+    {label:'RFQ received', num:rfq, color:'#1E88C7'},
+    {label:'PO received', num:po, color:'#1B3A5C'},
+  ];
   const used = segs.reduce((a,x)=>a+x.num,0);
-  segs.push({label:'Not started', num:Math.max(0, SALES_TARGET-used), color:'#E3ECF4'});
+  segs.push({label:'Not yet at sales', num:Math.max(0, SALES_TARGET-used), color:'#E3ECF4'});
   document.getElementById('salesPieTotal').textContent = SALES_TARGET;
   document.getElementById('salesPieLeg').innerHTML = segs.map(g=>`<div><span class="sw" style="background:${g.color}"></span><b>${g.num}</b> ${esc(g.label)}</div>`).join('');
   document.getElementById('boxSalesPie').title = 'Sales target: '+SALES_TARGET+' unique products to sell (set by the sales team). Colours show where they are now.';
@@ -1952,7 +1951,7 @@ function renderMiniDash(){
   document.getElementById('miniQMove').textContent = M.mv[5].in>0 ? ('+'+M.mv[5].in+' this period') : '0 this period';
   const rtsQ = MINI_RTS;
   document.getElementById('miniQualified').textContent = rtsQ.total;
-  document.getElementById('boxQualified').title = rtsQ.total+' products ready to sell:\n'+rtsQ.qualified+' : PQ done (qualified)\n'+rtsQ.noPq+' : no PQ needed (agreement signed)';
+  document.getElementById('boxQualified').title = rtsQ.total+' products ready to sell:\n'+rtsQ.qualified+' : PQ done (qualified)\n'+rtsQ.noPq+' : no PQ needed';
 
   // ---- ready to sell (shown in the sales funnel) + sales funnel ----
   renderMiniSalesFunnel();
