@@ -238,7 +238,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 
 /* ---- Targets mini dashboard ---- */
 .mini-dash{margin-top:0;}
-.mini-grid{display:grid; grid-template-columns:260px 1fr 200px; grid-template-areas:"pie fag bag" "pie fpq bpq" "pie fsl bsl"; gap:18px;}
+.mini-grid{display:grid; grid-template-columns:260px 1fr 200px; grid-template-areas:"pie fag bag" "pie fpq bpq"; gap:18px;}
 .mini-box{border:1px solid var(--line); border-radius:12px; background:var(--bg-panel); padding:16px 18px;}
 .mini-title{font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); font-weight:600; margin-bottom:8px;}
 .mini-pie{grid-area:pie; display:flex; flex-direction:column; align-items:center;}
@@ -249,7 +249,6 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .mini-pie-legend{display:flex; flex-direction:column; gap:6px; margin-top:12px; font-family:var(--font-mono); font-size:12px; color:var(--text-muted); width:100%;}
 .mini-pie-legend .lg{display:flex; align-items:center; gap:8px;}
 .mini-pie-legend .sw{width:12px; height:12px; border-radius:3px; flex-shrink:0;}
-.mini-funnel{grid-area:funnel;}
 #miniFunnelSvg .flow-node-count{font-size:34px;}
 .flow-move{paint-order:stroke; stroke:#fff; stroke-width:5px; stroke-linejoin:round; font-family:var(--font-display); font-size:21px; font-weight:700;}
 .flow-move.in{fill:#1F9D65;}
@@ -272,8 +271,9 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .mini-pie-leg div{display:flex; align-items:center; gap:7px;}
 .mini-pie-leg .sw{width:11px; height:11px; border-radius:3px; flex:none;}
 .mini-pie-leg b{min-width:26px; text-align:right;}
-.sales-leg{width:auto; font-size:14px; gap:6px; min-width:240px;}
-.mini-row2{display:grid; grid-template-columns:1fr; gap:18px; margin-top:18px;}
+.sales-leg{width:auto; font-size:13px; gap:6px; min-width:170px;}
+#boxSalesPie .mini-lines-body{gap:22px; flex-wrap:nowrap;}
+.mini-row2{display:grid; grid-template-columns:460px 1fr 200px; gap:18px; margin-top:18px;}
 .mini-row2 .mini-lines{margin-top:0;}
 .mini-target{display:flex; flex-direction:column; justify-content:center;}
 
@@ -307,7 +307,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .mini-ready{border-color:var(--green);}
 .mini-ready .mini-big{color:var(--green);}
 @media (max-width:1000px){
-  .mini-grid{grid-template-columns:1fr; grid-template-areas:"pie" "fag" "bag" "fpq" "bpq" "fsl" "bsl";}
+  .mini-grid{grid-template-columns:1fr; grid-template-areas:"pie" "fag" "bag" "fpq" "bpq";}
   .mini-row2{grid-template-columns:1fr;}
   .cov-kpis,.cov-grid{grid-template-columns:1fr;}
 }
@@ -364,7 +364,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v54 · 4 Nov 2026, 16:20</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v55 · 4 Nov 2026, 16:40</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -553,15 +553,6 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
           <div class="mini-qmove" id="miniQMove"></div>
         </div>
 
-        <div class="mini-box mini-funnel" style="grid-area:fsl;" id="boxSalesFunnel">
-          <div class="mini-title">Sales funnel</div>
-          <div id="miniSalesSvg"></div>
-        </div>
-        <div class="mini-box mini-done" style="grid-area:bsl;" id="boxPo">
-          <div class="mini-title">PO received</div>
-          <div class="mini-big" id="miniPo">–</div>
-          <div class="mini-qmove" id="miniPoMove"></div>
-        </div>
       </div>
 
       <div class="mini-row2">
@@ -574,6 +565,15 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
             </div>
             <div class="mini-pie-leg sales-leg" id="salesPieLeg"></div>
           </div>
+        </div>
+        <div class="mini-box mini-funnel" id="boxSalesFunnel">
+          <div class="mini-title">Sales funnel</div>
+          <div id="miniSalesSvg"></div>
+        </div>
+        <div class="mini-box mini-done" id="boxPo">
+          <div class="mini-title">PO received</div>
+          <div class="mini-big" id="miniPo">–</div>
+          <div class="mini-qmove" id="miniPoMove"></div>
         </div>
       </div>
     </section>
@@ -1876,8 +1876,8 @@ function renderMiniSalesFunnel(){
   renderFunnelSVG('miniSalesSvg', [
     {label:'Ready to sell', count:rts.total, done:false,
       tip:'Ready to sell — '+rts.qualified+' qualified + '+rts.noPq+' signed with no PQ needed\n\nCOUNTED:\n'+(rts.items.join('\n')||'None yet')+(rts.skipped.length?'\n\nNOT COUNTED (check these):\n'+rts.skipped.join('\n'):'')},
-    {label:'PQ received', count:0, countText:'–', done:false, tip:'PQ received — data not connected yet'},
-  ], 740, true);
+    {label:'RFQ received', count:0, countText:'–', done:false, tip:'RFQ received — data not connected yet'},
+  ], 560, true);
   // PO received (final box) + weekly new POs
   const now = new Date(), from = new Date(now.getTime()-MOVE_DAYS*86400000);
   const newPo = ok ? DATA_SALES.filter(r=>r.date && r.date>from && r.date<=now).length : 0;
