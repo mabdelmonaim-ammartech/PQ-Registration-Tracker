@@ -272,6 +272,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .mini-pie-leg div{display:flex; align-items:center; gap:7px;}
 .mini-pie-leg .sw{width:11px; height:11px; border-radius:3px; flex:none;}
 .mini-pie-leg b{min-width:26px; text-align:right;}
+.sales-leg{width:auto; font-size:14px; gap:6px; min-width:240px;}
 .mini-row2{display:grid; grid-template-columns:1fr; gap:18px; margin-top:18px;}
 .mini-row2 .mini-lines{margin-top:0;}
 .mini-target{display:flex; flex-direction:column; justify-content:center;}
@@ -363,7 +364,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v53 · 4 Nov 2026, 15:50</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v54 · 4 Nov 2026, 16:20</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -548,10 +549,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
         </div>
         <div class="mini-box mini-done" style="grid-area:bpq;" id="boxQualified">
           <div class="mini-title">Qualified</div>
-          <div class="mini-qrow">
-            <div class="mini-qcol"><div class="mini-big" id="miniQualified">–</div><div class="mini-qcap">qualified</div></div>
-            <div class="mini-qcol" id="boxNoPq"><div class="mini-big2" id="miniNoPq">–</div><div class="mini-qcap">no PQ needed</div></div>
-          </div>
+          <div class="mini-big" id="miniQualified">–</div>
           <div class="mini-qmove" id="miniQMove"></div>
         </div>
 
@@ -567,16 +565,16 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
       </div>
 
       <div class="mini-row2">
-        <div class="mini-box mini-lines">
-        <div class="mini-title">Unique products we are working on</div>
-        <div class="mini-lines-body">
-          <div class="mini-pie-wrap">
-            <canvas id="chartLines"></canvas>
-            <div class="mini-pie-center"><span class="mini-pie-total" id="linesTotal">–</span><span class="mini-pie-cap">products</span></div>
+        <div class="mini-box mini-lines" id="boxSalesPie">
+          <div class="mini-title">Sales target</div>
+          <div class="mini-lines-body">
+            <div class="mini-pie-wrap">
+              <canvas id="chartSales"></canvas>
+              <div class="mini-pie-center"><span class="mini-pie-total" id="salesPieTotal">–</span><span class="mini-pie-cap">target</span></div>
+            </div>
+            <div class="mini-pie-leg sales-leg" id="salesPieLeg"></div>
           </div>
-          <div class="lines-legend" id="linesLegend"></div>
         </div>
-      </div>
       </div>
     </section>
     <section class="panel" id="coveragePanel" style="margin-top:18px;">
@@ -1820,39 +1818,7 @@ function computeStageMovementFromDates(){
   return {mv, missing};
 }
 
-let chartLinesInstance = null;
-// Doughnut of every unique product with a vendor: Needs PQ / No PQ needed / not filled in, each split into ready to sell vs not yet.
-function renderProductLinesPie(){
-  const c = {needReady:0, needNot:0, noReady:0, noNot:0, blankReady:0, blankNot:0};
-  PRODUCTS.list.forEach(p=>{
-    if(p.need_pq==='yes') p.ready ? c.needReady++ : c.needNot++;
-    else if(p.need_pq==='no') p.ready ? c.noReady++ : c.noNot++;
-    else p.ready ? c.blankReady++ : c.blankNot++;
-  });
-  const total = PRODUCTS.list.length;
-  const needT = c.needReady+c.needNot, noT = c.noReady+c.noNot, blankT = c.blankReady+c.blankNot;
-  const segs = [
-    {label:'Needs PQ – ready to sell', num:c.needReady, color:'#1F9D65'},
-    {label:'Needs PQ – not ready yet', num:c.needNot, color:'#D98A15'},
-    {label:'No PQ needed – ready to sell', num:c.noReady, color:'#1E88C7'},
-    {label:'No PQ needed – not ready yet', num:c.noNot, color:'#9CCBEA'},
-    {label:'Need PQ? not filled in', num:blankT, color:'#B7C2CE'},
-  ];
-  document.getElementById('linesTotal').textContent = total;
-  const row = (sw,label,n)=>`<div class="lines-row"><span class="sw" style="background:${sw}"></span><b>${n}</b> ${esc(label)}</div>`;
-  document.getElementById('linesLegend').innerHTML =
-    `<div class="lines-group" style="border-color:#1F9D65"><div class="lines-group-head">${needT}<span>need PQ</span></div>${row('#1F9D65','ready to sell (qualified)',c.needReady)}${row('#D98A15','not ready yet',c.needNot)}</div>`+
-    `<div class="lines-group" style="border-color:#1E88C7"><div class="lines-group-head">${noT}<span>do not need PQ</span></div>${row('#1E88C7','ready to sell (agreement signed)',c.noReady)}${row('#9CCBEA','not ready yet (agreement not signed)',c.noNot)}</div>`+
-    (blankT>0 ? `<div class="lines-group"><div class="lines-group-head">${blankT}<span>"Need PQ?" not filled in</span></div>${row('#B7C2CE','of which ready to sell (qualified)',c.blankReady)}</div>` : '');
-  if(chartLinesInstance) chartLinesInstance.destroy();
-  chartLinesInstance = new Chart(document.getElementById('chartLines'), {
-    type:'doughnut',
-    data:{ labels:segs.map(s=>s.label), datasets:[{ data:segs.map(s=>s.num), backgroundColor:segs.map(s=>s.color), borderWidth:2, borderColor:'#FFFFFF' }] },
-    options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',
-      plugins:{ legend:{display:false}, tooltip:{enabled:false, external:externalTip} } }
-  });
-}
-
+let chartSalesInstance = null;
 function tableToTSV(rows){ return rows.map(r=>r.map(c=>String(c).replace(/[\t\r\n]+/g,' ')).join('\t')).join('\n'); }
 function fillCovTable(id, head, rows, btnId){
   document.getElementById(id).innerHTML = '<thead><tr>'+head.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+
@@ -1897,18 +1863,17 @@ function externalTip(ctx){
 const STAGE_COLORS = {1:'#B7C2CE', 2:'#D98A15', 3:'#1E88C7', 4:'#7E57C2', 5:'#1F9D65'};
 const PQ_NAMES = ['Categorized','Study In Progress','Matrix Done','PQ Submitted','Qualified'];
 let MINI_RTS = {total:0, qualified:0, noPq:0, items:[], skipped:[]};
+// buckets used by both pies: ready/qualified products vs each PQ stage (not ready yet)
+function productBuckets(){
+  const b = {ready:0, 1:0, 2:0, 3:0, 4:0};
+  PRODUCTS.list.forEach(p=>{ if(p.ready || p.stage===5) b.ready++; else b[p.stage]++; });
+  return b;
+}
 function renderMiniSalesFunnel(){
   const ok = salesUnlocked && !SALES_ERROR && DATA_SALES.length>0;
   const lockedTip = 'Locked — unlock the Sales tab to see sales numbers';
   const rts = MINI_RTS;
-  // Sales target pie: the target split by status (ready to sell, each PQ stage, not started)
-  const notReady = n => PRODUCTS.list.filter(p=>!p.ready && p.stage===n).length;
-  const segs = [{label:'Ready to sell', num:rts.total, color:'#0E7C66'}];
-  for(let n=1;n<=4;n++) segs.push({label:PQ_NAMES[n-1], num:notReady(n), color:STAGE_COLORS[n]});
-  const used = segs.reduce((a,b)=>a+b.num,0);
-  segs.push({label:'Not started', num:Math.max(0, SALES_TARGET-used), color:'#E3ECF4'});
   renderFunnelSVG('miniSalesSvg', [
-    {label:'Sales target', pie:segs, centerText:SALES_TARGET, count:SALES_TARGET, tip:'Sales target: '+SALES_TARGET+' unique products to sell (set by the sales team). Colours show where they are now.'},
     {label:'Ready to sell', count:rts.total, done:false,
       tip:'Ready to sell — '+rts.qualified+' qualified + '+rts.noPq+' signed with no PQ needed\n\nCOUNTED:\n'+(rts.items.join('\n')||'None yet')+(rts.skipped.length?'\n\nNOT COUNTED (check these):\n'+rts.skipped.join('\n'):'')},
     {label:'PQ received', count:0, countText:'–', done:false, tip:'PQ received — data not connected yet'},
@@ -1921,6 +1886,23 @@ function renderMiniSalesFunnel(){
   document.getElementById('boxPo').title = ok ? 'PO lines received (new in the last '+MOVE_DAYS+' days: '+newPo+')' : lockedTip;
   document.getElementById('boxSalesFunnel').title = '';
 }
+// Big pie under the products pie: the sales target split by where those products are now
+function renderSalesTargetPie(){
+  const b = productBuckets();
+  const segs = [{label:'Ready to sell', num:b.ready, color:STAGE_COLORS[5]}];
+  for(let n=1;n<=4;n++) segs.push({label:PQ_NAMES[n-1], num:b[n], color:STAGE_COLORS[n]});
+  const used = segs.reduce((a,x)=>a+x.num,0);
+  segs.push({label:'Not started', num:Math.max(0, SALES_TARGET-used), color:'#E3ECF4'});
+  document.getElementById('salesPieTotal').textContent = SALES_TARGET;
+  document.getElementById('salesPieLeg').innerHTML = segs.map(g=>`<div><span class="sw" style="background:${g.color}"></span><b>${g.num}</b> ${esc(g.label)}</div>`).join('');
+  document.getElementById('boxSalesPie').title = 'Sales target: '+SALES_TARGET+' unique products to sell (set by the sales team). Colours show where they are now.';
+  if(chartSalesInstance) chartSalesInstance.destroy();
+  chartSalesInstance = new Chart(document.getElementById('chartSales'), {
+    type:'doughnut',
+    data:{ labels:segs.map(x=>x.label), datasets:[{ data:segs.map(x=>x.num), backgroundColor:segs.map(x=>x.color), borderWidth:2, borderColor:'#FFFFFF' }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'62%', plugins:{ legend:{display:false}, tooltip:{enabled:false, external:externalTip} } }
+  });
+}
 
 function renderMiniDash(){
   PRODUCTS = buildProducts();
@@ -1928,8 +1910,11 @@ function renderMiniDash(){
   const inPq = PRODUCTS.list.length; // unique products that have at least one vendor row in PQ
   const remaining = Math.max(0, total-inPq);
   document.getElementById('miniPieTotal').textContent = total;
-  const stageN = n => PRODUCTS.list.filter(p=>p.stage===n).length;
-  const segs = [1,2,3,4,5].map(n=>({label:PQ_NAMES[n-1], num:stageN(n), color:STAGE_COLORS[n]}));
+  // ready-to-sell status needs the agreements, so work it out before drawing the pie
+  MINI_RTS = computeReadyToSell();
+  const bk = productBuckets();
+  const segs = [1,2,3,4].map(n=>({label:PQ_NAMES[n-1], num:bk[n], color:STAGE_COLORS[n]}));
+  segs.push({label:'Qualified / ready to sell', num:bk.ready, color:STAGE_COLORS[5]});
   segs.push({label:'No vendor yet', num:remaining, color:'#E3ECF4'});
   document.getElementById('miniPieLeg').innerHTML = segs.map(g=>`<div><span class="sw" style="background:${g.color}"></span><b>${g.num}</b> ${esc(g.label)}</div>`).join('');
   if(chartCoverageInstance) chartCoverageInstance.destroy();
@@ -1965,19 +1950,15 @@ function renderMiniDash(){
     {label:'PQ Submitted', count:exact(4), done:false, moveIn:M.mv[4].in, moveOut:M.mv[4].out, tip:mvTip(4,'PQ Submitted')},
   ], 740, true);
   document.getElementById('miniQMove').textContent = M.mv[5].in>0 ? ('+'+M.mv[5].in+' this period') : '0 this period';
-  document.getElementById('miniQualified').textContent = exact(5);
-  document.getElementById('boxQualified').title = 'Products qualified';
-  // products that do not need PQ at all are considered qualified too
-  const noPqList = CATALOG_NOPQ!==null ? CATALOG_NOPQ : PRODUCTS.list.filter(p=>p.need_pq==='no').map(p=>p.name);
-  document.getElementById('miniNoPq').textContent = noPqList.length;
-  document.getElementById('boxNoPq').title = noPqList.length+' products do not need PQ (Needs PQ? = No in the product list), so they are considered qualified:\n'+noPqList.join('\n');
+  const rtsQ = MINI_RTS;
+  document.getElementById('miniQualified').textContent = rtsQ.total;
+  document.getElementById('boxQualified').title = rtsQ.total+' products ready to sell:\n'+rtsQ.qualified+' : PQ done (qualified)\n'+rtsQ.noPq+' : no PQ needed (agreement signed)';
 
   // ---- ready to sell (shown in the sales funnel) + sales funnel ----
-  MINI_RTS = computeReadyToSell();
   renderMiniSalesFunnel();
+  renderSalesTargetPie();
 
   const cs = document.getElementById('catalogSizeTxt'); if(cs) cs.textContent = total;
-  renderProductLinesPie();
   renderCoveragePanel();
 }
 
