@@ -215,26 +215,6 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 
 
 
-/* ---- Sales ---- */
-.sales-gate{max-width:420px; margin:60px auto; text-align:center; display:flex; flex-direction:column; gap:12px; align-items:center;}
-.sales-gate-title{font-family:var(--font-display); font-size:26px; font-weight:700;}
-.sales-gate-sub{font-family:var(--font-mono); font-size:12.5px; color:var(--text-muted);}
-.sales-gate input{width:100%; max-width:280px; background:var(--bg-panel-raised); border:1px solid var(--line); color:var(--text); font-size:14px; padding:10px 12px; border-radius:8px; outline:none; text-align:center;}
-.sales-gate input:focus{border-color:var(--cyan-dim);}
-.sales-unlock{padding:9px 28px;}
-.sales-gate-err{font-family:var(--font-mono); font-size:12px; color:var(--red); min-height:16px;}
-.sales-head{display:flex; align-items:center; gap:12px;}
-.sales-grid{display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:24px;}
-.sales-tall{height:300px;}
-.sales-ctrl{align-items:center; gap:18px; margin-bottom:10px;}
-.sales-check{font-family:var(--font-mono); font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:8px; cursor:pointer;}
-.sales-check input{flex:none; min-width:0; width:auto; margin:0;}
-.sales-hidden-note{font-family:var(--font-mono); font-size:11.5px; color:var(--text-dim);}
-.sales-select{font-family:inherit; font-size:inherit; font-weight:inherit; color:inherit; background:transparent; border:none; border-bottom:2px dashed var(--cyan-dim); cursor:pointer; padding:0 2px;}
-#tableSales td.num, #tableSales th, #tableSales td.nw{white-space:nowrap;}
-#tableSales td.num{text-align:right; font-family:var(--font-mono);}
-.sales-kpis{margin-top:0;}
-@media (max-width:1000px){ .sales-grid{grid-template-columns:1fr;} }
 
 /* ---- Targets mini dashboard ---- */
 .mini-dash{margin-top:0;}
@@ -271,6 +251,11 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
 .mini-pie-leg div{display:flex; align-items:center; gap:7px;}
 .mini-pie-leg .sw{width:11px; height:11px; border-radius:3px; flex:none;}
 .mini-pie-leg b{min-width:26px; text-align:right;}
+.period-pick{display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:14px; font-size:14px; color:#4B5563;}
+.period-pick .pp-title{font-weight:600; color:var(--text);}
+.period-pick label{display:inline-flex; align-items:center; gap:6px; cursor:pointer;}
+.period-pick input{width:16px; height:16px; accent-color:#1F9D65; cursor:pointer;}
+.period-pick .pp-note{font-size:12.5px; color:var(--text-dim);}
 .sales-leg{width:auto; font-size:13px; gap:6px; min-width:170px;}
 #boxSalesPie .mini-lines-body{gap:22px; flex-wrap:nowrap;}
 .mini-row2{display:grid; grid-template-columns:460px 1fr 200px; gap:18px; margin-top:18px;}
@@ -364,7 +349,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v56 · 4 Nov 2026, 17:05</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v58 · 7 Nov 2026, 16:20</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -376,7 +361,6 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
   <button class="page-tab" id="tabTgBtn" data-page="tg">Targets</button>
   <button class="page-tab" id="tabAgBtn" data-page="ag">Agreements &amp; Registration</button>
   <button class="page-tab" id="tabPqBtn" data-page="pq">PQ Follow Up</button>
-  <button class="page-tab" id="tabSalesBtn" data-page="sales">Sales</button>
 </nav>
 
 <div id="loadingBanner" class="loading-banner">
@@ -523,6 +507,13 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
   <div id="pageCp" class="page">
 
     <section class="panel mini-dash">
+      <div class="period-pick" role="group" aria-label="Movement period">
+        <span class="pp-title">Show changes for:</span>
+        <label><input type="checkbox" value="weekly"> Weekly</label>
+        <label><input type="checkbox" value="monthly"> Monthly</label>
+        <label><input type="checkbox" value="yearly"> Yearly</label>
+        <span class="pp-note">applies to the Agreement, PQ and Sales funnels (the +n / −n numbers and the “this …” lines)</span>
+      </div>
       <div class="mini-grid">
         <div class="mini-box mini-pie">
           <div class="mini-title">Target products</div>
@@ -597,70 +588,6 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </section>
 
 
-  </div>
-
-  <!-- ============ SALES PAGE (password protected) ============ -->
-  <div id="pageSales" class="page" style="display:none;">
-    <div id="salesGate" class="panel sales-gate">
-      <div class="sales-gate-title">Sales</div>
-      <div class="sales-gate-sub">Enter the password to view sales data</div>
-      <input type="password" id="salesPass" placeholder="Password" autocomplete="off">
-      <button class="btn-ghost sales-unlock" id="salesUnlockBtn">Unlock</button>
-      <div class="sales-gate-err" id="salesGateErr"></div>
-    </div>
-    <div id="salesContent" style="display:none;">
-      <div class="sales-head"><h2 class="target-section-title" style="margin-top:24px; flex:1;">Sales</h2><button class="btn-ghost small" id="salesLockBtn">Lock</button></div>
-
-    <div id="salesNote" class="tg-warning" style="display:none;">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span></span>
-    </div>
-    <section class="kpi-strip sales-kpis" id="kpiStripSales"></section>
-
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Sales by month</h2>
-        <span class="panel-sub">PO value by PO date, with profit where cost is known</span>
-      </div>
-      <div class="toolbar sales-ctrl">
-        <label class="sales-check"><input type="checkbox" id="salesIncludeLarge"> Include orders over 1M in the charts</label>
-        <span class="sales-hidden-note" id="salesHiddenNote"></span>
-      </div>
-      <div class="chart-wrap"><canvas id="chartSalesMonth"></canvas></div>
-    </section>
-
-    <div class="sales-grid">
-      <section class="panel" style="margin-top:0;">
-        <div class="panel-head"><h2>Sales by product</h2><span class="panel-sub">Blue = PO value, green = profit</span></div>
-        <div class="chart-wrap sales-tall"><canvas id="chartSalesProduct"></canvas></div>
-      </section>
-      <section class="panel" style="margin-top:0;">
-        <div class="panel-head"><h2>Sales by <select id="salesGroupBy" class="sales-select"><option value="client">client</option><option value="supplier">supplier</option></select></h2><span class="panel-sub">PO value</span></div>
-        <div class="chart-wrap sales-tall"><canvas id="chartSalesGroup"></canvas></div>
-      </section>
-    </div>
-
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Purchase orders</h2>
-        <span class="panel-sub" id="salesTableSub"></span>
-      </div>
-      <div class="toolbar"><input type="text" id="salesSearch" placeholder="Search PO, client, supplier, product, status…"></div>
-      <div class="table-wrap" id="tableWrapSales">
-        <table id="tableSales">
-          <thead><tr>
-            <th>PO #</th><th>Date</th><th>Client</th><th>Supplier</th><th>Product</th><th>Qty</th><th>PO Amount</th><th>Cost</th><th>Profit</th><th>Status</th>
-          </tr></thead>
-          <tbody id="bodySales"></tbody>
-        </table>
-      </div>
-      <div class="pagination">
-        <button class="pag-btn" id="salesPrev">&lt;</button>
-        <span class="pag-info" id="salesPagInfo">1 / 1</span>
-        <button class="pag-btn" id="salesNext">&gt;</button>
-      </div>
-    </section>
-    </div>
   </div>
 
   <!-- ============ TARGETS PAGE ============ -->
@@ -947,6 +874,7 @@ function mapPqRow(row, i){
     doc_agreement: g('Agreement Doc'),
   };
   r.stage = computePqStage(r);
+  r.stage_typed = stageFromText(r.pq_stage_typed);   // ONLY the PQ Stage column (used for the product funnel and pie)
   return r;
 }
 
@@ -1011,18 +939,15 @@ function docButton(label, url){
 function switchPage(p){
   activePage = p;
   document.getElementById('pageCp').style.display = p==='cp' ? '' : 'none';
-  document.getElementById('pageSales').style.display = p==='sales' ? '' : 'none';
   document.getElementById('pageAg').style.display = p==='ag' ? '' : 'none';
   document.getElementById('pagePq').style.display = p==='pq' ? '' : 'none';
   document.getElementById('pageTg').style.display = p==='tg' ? '' : 'none';
   document.getElementById('tabCpBtn').classList.toggle('active', p==='cp');
-  document.getElementById('tabSalesBtn').classList.toggle('active', p==='sales');
   document.getElementById('tabAgBtn').classList.toggle('active', p==='ag');
   document.getElementById('tabPqBtn').classList.toggle('active', p==='pq');
   document.getElementById('tabTgBtn').classList.toggle('active', p==='tg');
 }
 document.getElementById('tabCpBtn').addEventListener('click', ()=>switchPage('cp'));
-document.getElementById('tabSalesBtn').addEventListener('click', ()=>switchPage('sales'));
 document.getElementById('tabAgBtn').addEventListener('click', ()=>switchPage('ag'));
 document.getElementById('tabPqBtn').addEventListener('click', ()=>switchPage('pq'));
 document.getElementById('tabTgBtn').addEventListener('click', ()=>switchPage('tg'));
@@ -1682,7 +1607,7 @@ function buildProducts(){
     });
   });
   byKey.forEach(p=>{
-    p.stage = Math.max(...p.rows.map(r=>r.stage||1));
+    p.stage = Math.max(...p.rows.map(r=>r.stage_typed||0));   // best stage typed in the PQ Stage column; 0 = column blank on every row
     p.partners = [...new Set(p.rows.map(r=>(r.partner||'?').trim()))];
     const nps = p.rows.map(r=>(r.need_pq||'').trim().toLowerCase());
     p.need_pq = nps.includes('yes') ? 'yes' : nps.includes('no') ? 'no' : '';
@@ -1710,7 +1635,18 @@ function computeReadyToSell(){
   return {qualified, noPq, total: qualified+noPq, items, skipped};
 }
 
-const MOVE_DAYS = 7; // movement window: entered/left a stage within the last N days
+let MOVE_DAYS = 7; // movement window: entered/left a stage within the last N days (set by the Weekly / Monthly / Yearly boxes)
+const PERIODS = {weekly:{days:7, name:'this week', word:'week'}, monthly:{days:30, name:'this month', word:'month'}, yearly:{days:365, name:'this year', word:'year'}};
+let MOVE_PERIOD = 'weekly';
+try{ const sp = localStorage.getItem('movePeriod'); if(PERIODS[sp]) MOVE_PERIOD = sp; }catch(e){}
+MOVE_DAYS = PERIODS[MOVE_PERIOD].days;
+function setMovePeriod(k){
+  if(!PERIODS[k]) return;
+  MOVE_PERIOD = k; MOVE_DAYS = PERIODS[k].days;
+  try{ localStorage.setItem('movePeriod', k); }catch(e){}
+  document.querySelectorAll('.period-pick input').forEach(i=>{ i.checked = (i.value===k); });
+  try{ renderMiniDash(); }catch(e){ console.error(e); }
+}
 
 // Stage entry dates per PQ row. A product is "in" a stage from its entry date until the next stage's entry date.
 function pqEntryDates(r){
@@ -1857,13 +1793,14 @@ const PQ_NAMES = ['Categorized','Study In Progress','Matrix Done','PQ Submitted'
 let MINI_RTS = {total:0, qualified:0, noPq:0, items:[], skipped:[]};
 // buckets used by both pies: ready/qualified products vs each PQ stage (not ready yet)
 function productBuckets(){
-  const b = {ready:0, 1:0, 2:0, 3:0, 4:0};
-  PRODUCTS.list.forEach(p=>{ if(p.ready || p.stage===5) b.ready++; else b[p.stage]++; });
+  // one bucket per product, from the "PQ Stage" column only (5 = Qualified)
+  const b = {ready:0, 1:0, 2:0, 3:0, 4:0, blank:0};
+  PRODUCTS.list.forEach(p=>{ if(p.stage===5) b.ready++; else if(p.stage>=1) b[p.stage]++; else b.blank++; });
   return b;
 }
 function renderMiniSalesFunnel(){
-  const ok = salesUnlocked && !SALES_ERROR && DATA_SALES.length>0;
-  const lockedTip = 'Locked — unlock the Sales tab to see sales numbers';
+  const ok = false;   // PO data is not connected
+  const lockedTip = 'PO received — data not connected yet';
   const rts = MINI_RTS;
   renderFunnelSVG('miniSalesSvg', [
     {label:'Ready to sell', count:rts.total, done:false,
@@ -1874,7 +1811,7 @@ function renderMiniSalesFunnel(){
   const now = new Date(), from = new Date(now.getTime()-MOVE_DAYS*86400000);
   const newPo = ok ? DATA_SALES.filter(r=>r.date && r.date>from && r.date<=now).length : 0;
   document.getElementById('miniPo').textContent = ok ? DATA_SALES.length : '–';
-  document.getElementById('miniPoMove').textContent = ok ? (newPo>0 ? '+'+newPo+' this period' : '0 this period') : '';
+  document.getElementById('miniPoMove').textContent = ok ? (newPo>0 ? '+'+newPo+' '+PERIODS[MOVE_PERIOD].name : '0 '+PERIODS[MOVE_PERIOD].name) : '';
   document.getElementById('boxPo').title = ok ? 'PO lines received (new in the last '+MOVE_DAYS+' days: '+newPo+')' : lockedTip;
   document.getElementById('boxSalesFunnel').title = '';
 }
@@ -1913,7 +1850,7 @@ function renderMiniDash(){
   MINI_RTS = computeReadyToSell();
   const bk = productBuckets();
   const segs = [1,2,3,4].map(n=>({label:PQ_NAMES[n-1], num:bk[n], color:STAGE_COLORS[n]}));
-  segs.push({label:'Qualified / ready to sell', num:bk.ready, color:STAGE_COLORS[5]});
+  segs.push({label:'Qualified', num:bk.ready, color:STAGE_COLORS[5]});
   segs.push({label:'No vendor yet', num:remaining, color:'#E3ECF4'});
   document.getElementById('miniPieLeg').innerHTML = segs.map(g=>`<div><span class="sw" style="background:${g.color}"></span><b>${g.num}</b> ${esc(g.label)}</div>`).join('');
   if(chartCoverageInstance) chartCoverageInstance.destroy();
@@ -1927,7 +1864,7 @@ function renderMiniDash(){
   // ---- agreement funnel: 4 circles + "Agreement done" box; weekly numbers come from the Agreement Log ----
   const exAg = n => DATA_AG.filter(r=>r.stage===n).length;
   const AM = computeAgMovement();
-  const agTip = (n,label,extra) => label+(extra||' — in progress')+'. Last '+MOVE_DAYS+' days: +'+AM.mv[n].in+' entered, −'+AM.mv[n].out+' left'+(AM.ok ? ' (source: Agreement Log)' : ' — Agreement Log not connected yet');
+  const agTip = (n,label,extra) => label+(extra||' — in progress')+'. Last '+MOVE_DAYS+' days ('+PERIODS[MOVE_PERIOD].word+'): +'+AM.mv[n].in+' entered, −'+AM.mv[n].out+' left'+(AM.ok ? ' (source: Agreement Log)' : ' — Agreement Log not connected yet');
   renderFunnelSVG('miniAgSvg', [
     {label:'Study', count:exAg(1), done:false, moveIn:AM.mv[1].in, moveOut:AM.mv[1].out, tip:agTip(1,'Study')},
     {label:'Agreement Negotiation', count:exAg(2), done:false, moveIn:AM.mv[2].in, moveOut:AM.mv[2].out, tip:agTip(2,'Agreement Negotiation')},
@@ -1935,7 +1872,7 @@ function renderMiniDash(){
     {label:'NG Registration', count:exAg(4), done:false, moveIn:AM.mv[4].in, moveOut:AM.mv[4].out, tip:agTip(4,'NG Registration',' — '+exAg(4)+' pending to start')},
   ], 740, true);
   document.getElementById('miniAgDone').textContent = exAg(5);
-  document.getElementById('miniAgMove').textContent = AM.mv[5].in>0 ? ('+'+AM.mv[5].in+' this period') : '0 this period';
+  document.getElementById('miniAgMove').textContent = AM.mv[5].in>0 ? ('+'+AM.mv[5].in+' '+PERIODS[MOVE_PERIOD].name) : '0 '+PERIODS[MOVE_PERIOD].name;
   document.getElementById('boxAgDone').title = 'Registered companies — agreement and registration work is done'+(AM.ok?'':' (weekly number: Agreement Log not connected yet)');
 
   // ---- PQ funnel: first 4 stages as circles; the last stage (Qualified) gets its own big box ----
@@ -1948,10 +1885,10 @@ function renderMiniDash(){
     {label:'Matrix Done', count:exact(3), done:false, moveIn:M.mv[3].in, moveOut:M.mv[3].out, tip:mvTip(3,'Matrix Done')},
     {label:'PQ Submitted', count:exact(4), done:false, moveIn:M.mv[4].in, moveOut:M.mv[4].out, tip:mvTip(4,'PQ Submitted')},
   ], 740, true);
-  document.getElementById('miniQMove').textContent = M.mv[5].in>0 ? ('+'+M.mv[5].in+' this period') : '0 this period';
+  document.getElementById('miniQMove').textContent = M.mv[5].in>0 ? ('+'+M.mv[5].in+' '+PERIODS[MOVE_PERIOD].name) : '0 '+PERIODS[MOVE_PERIOD].name;
   const rtsQ = MINI_RTS;
-  document.getElementById('miniQualified').textContent = rtsQ.total;
-  document.getElementById('boxQualified').title = rtsQ.total+' products ready to sell:\n'+rtsQ.qualified+' : PQ done (qualified)\n'+rtsQ.noPq+' : no PQ needed';
+  document.getElementById('miniQualified').textContent = PRODUCTS.list.filter(p=>p.stage===5).length;
+  document.getElementById('boxQualified').title = 'Unique products whose PQ Stage = Qualified';
 
   // ---- ready to sell (shown in the sales funnel) + sales funnel ----
   renderMiniSalesFunnel();
@@ -1961,201 +1898,8 @@ function renderMiniDash(){
   renderCoveragePanel();
 }
 
-// ============================================================
-// SALES (Company Performance page) — one row per PO line
-// ============================================================
-const SALES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQCTlzIcUba5uozPnDIrHdSG5MqvBah_yyB6cY1EN1L3IsPrthjwbzjonarbOzjq1eHJqgAFDXaZr2i/pub?gid=0&single=true&output=csv";
-const LARGE_PO = 1000000;   // orders above this are hidden from the charts unless the checkbox is ticked
-const CURRENCY = '';        // e.g. 'SAR ' — shown in front of money values
-let DATA_SALES = [], SALES_ERROR = '', salesPage = 1, salesCharts = {};
-const SALES_PAGE_SIZE = 20;
-
-// ---- password gate (client-side only — see note in the chat: it hides the page, it is not real security) ----
-const SALES_PASS_HASH = "d98ea3021292bcbe9371af2dadb18f249f6976b89e421f52f4a2b6deaee3bdbb"; // SHA-256 of the password; the password itself is not stored in this file
-let salesUnlocked = false;
-try{ salesUnlocked = sessionStorage.getItem('salesUnlocked')==='1'; }catch(e){}
-async function sha256Hex(str){
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-async function loadAndRenderSales(){
-  const res = await loadSalesSafe();
-  DATA_SALES = res.rows; SALES_ERROR = res.err;
-  try{ renderMiniSalesFunnel(); }catch(e){}
-  try{ renderSales(); }catch(e){ console.error('Sales rendering failed:', e); const n=document.getElementById('salesNote'); n.style.display=''; n.querySelector('span').textContent='Could not render the sales section: '+(e.message||String(e)); }
-}
-function showSalesContent(){
-  document.getElementById('salesGate').style.display = 'none';
-  document.getElementById('salesContent').style.display = '';
-  loadAndRenderSales();
-}
-function lockSales(){
-  salesUnlocked = false;
-  try{ sessionStorage.removeItem('salesUnlocked'); }catch(e){}
-  DATA_SALES = [];
-  Object.values(salesCharts).forEach(c=>c&&c.destroy()); salesCharts = {};
-  document.getElementById('kpiStripSales').innerHTML = '';
-  document.getElementById('bodySales').innerHTML = '';
-  document.getElementById('salesContent').style.display = 'none';
-  document.getElementById('salesGate').style.display = '';
-  document.getElementById('salesPass').value = '';
-  document.getElementById('salesGateErr').textContent = '';
-  try{ renderMiniSalesFunnel(); }catch(e){}
-}
-async function tryUnlockSales(){
-  const err = document.getElementById('salesGateErr');
-  const pass = document.getElementById('salesPass').value;
-  if(!window.crypto || !crypto.subtle){ err.textContent = 'This browser cannot check the password here (open the dashboard over https).'; return; }
-  if((await sha256Hex(pass)) === SALES_PASS_HASH){
-    salesUnlocked = true;
-    try{ sessionStorage.setItem('salesUnlocked','1'); }catch(e){}
-    err.textContent = ''; document.getElementById('salesPass').value = '';
-    showSalesContent();
-  } else {
-    err.textContent = 'Incorrect password';
-    document.getElementById('salesPass').select();
-  }
-}
-document.getElementById('salesUnlockBtn').addEventListener('click', tryUnlockSales);
-document.getElementById('salesPass').addEventListener('keydown', e=>{ if(e.key==='Enter') tryUnlockSales(); });
-document.getElementById('salesLockBtn').addEventListener('click', lockSales);
-
-function parseNum(v){
-  const t = String(v==null?'':v).replace(/[,\s]/g,'');
-  if(!t || /^n\/?a$/i.test(t)) return null;
-  const n = parseFloat(t); return isNaN(n) ? null : n;
-}
-function fmtMoney(n){ return n==null ? '—' : CURRENCY + n.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2}); }
-function fmtCompact(n){
-  if(n==null) return '—';
-  const a = Math.abs(n);
-  if(a>=1e6) return CURRENCY+(n/1e6).toFixed(2)+'M';
-  if(a>=1e3) return CURRENCY+(n/1e3).toFixed(1)+'K';
-  return CURRENCY+Math.round(n);
-}
-function salesGetter(row){
-  const map = {};
-  Object.keys(row).forEach(k => { map[norm(k).toUpperCase()] = row[k]; });
-  return (label) => blank(map[label.toUpperCase()]);
-}
-function mapSalesRow(row){
-  const g = salesGetter(row);
-  const name = g('Target Product') || g('Product') || '—';
-  return {
-    po: g('PO S.N'), client: g('CLIENT'), supplier: g('SUPPLIER'),
-    date: parseSheetDate(g('PO Date')), qty: parseNum(g('PO QTY')),
-    amt: parseNum(g('PO AMOUNT')), cost: parseNum(g('TOTAL COST')), profit: parseNum(g('TOTAL PROFIT')),
-    status: g('P.O STATUS'), partner: g('Partner'), name: name,
-  };
-}
-async function loadSalesSafe(){
-  try{
-    const raw = await fetchCSV(SALES_CSV_URL);
-    const keys = raw.length ? Object.keys(raw[0]).map(k=>norm(k).toUpperCase()) : [];
-    if(!raw.length || !keys.includes('PO AMOUNT')){
-      return {rows:[], err:'No "PO AMOUNT" column found in the sales link. Columns it does have: '+(keys.filter(Boolean).slice(0,12).join(', ')||'(none — empty sheet)')+'. If this is not the sales tab, use the sales tab link with its gid in SALES_CSV_URL.'};
-    }
-    return {rows: raw.map(mapSalesRow).filter(r=> r.amt!==null && r.amt>0 && (r.client||r.supplier||r.po)), err:''};
-  }catch(e){ return {rows:[], err:'Could not load the sales sheet: '+(e.message||String(e))}; }
-}
-
-function renderSales(){
-  const note = document.getElementById('salesNote');
-  if(SALES_ERROR){
-    note.style.display = ''; note.querySelector('span').textContent = SALES_ERROR;
-    document.getElementById('kpiStripSales').innerHTML = '';
-    document.getElementById('bodySales').innerHTML = '';
-    Object.values(salesCharts).forEach(c=>c&&c.destroy()); salesCharts = {};
-    return;
-  }
-  note.style.display = 'none';
-  const R = DATA_SALES;
-  const total = R.reduce((a,r)=>a+r.amt,0);
-  const poSet = new Set(R.map((r,i)=> r.po ? r.po+'|'+r.client : 'line'+i));
-  const clients = new Set(R.map(r=>r.client).filter(Boolean));
-  const pl = R.filter(r=>r.cost!==null && r.profit!==null);
-  const profit = pl.reduce((a,r)=>a+r.profit,0), plAmt = pl.reduce((a,r)=>a+r.amt,0);
-  const margin = plAmt>0 ? (profit/plAmt*100).toFixed(1) : '—';
-  const st = k => R.filter(r=>(r.status||'').toLowerCase().includes(k)).length;
-  const delivered = st('deliver'), open = st('open');
-  const noPo = R.filter(r=>!r.po).length;
-  const cards = [
-    {num: fmtCompact(total), label:'Total PO value', sub: R.length+' PO lines', accent:'var(--cyan)'},
-    {num: poSet.size, label:'Purchase orders', sub:'from '+clients.size+' clients'+(noPo?' · '+noPo+' line(s) without a PO number':''), accent:'var(--cyan)'},
-    {num: fmtCompact(profit), label:'Profit', sub: margin+'% margin · cost known on '+pl.length+' of '+R.length+' lines', accent:'var(--green)'},
-    {num: delivered+' / '+open, label:'Delivered / Open', sub: (R.length-delivered-open)>0 ? (R.length-delivered-open)+' line(s) with no status' : 'all lines have a status', accent:'var(--green)'},
-  ];
-  document.getElementById('kpiStripSales').innerHTML = cards.map(c=>`
-    <div class="kpi-card" style="--kpi-accent:${c.accent}"><div class="kpi-num">${c.num}</div><div class="kpi-label">${c.label}</div><div class="kpi-sub">${c.sub}</div></div>`).join('');
-  renderSalesCharts();
-  salesPage = 1; renderSalesTable();
-}
-
-function renderSalesCharts(){
-  if(SALES_ERROR) return;
-  const incl = document.getElementById('salesIncludeLarge').checked;
-  const R = DATA_SALES.filter(r=> incl || r.amt<=LARGE_PO);
-  const hidden = DATA_SALES.length - R.length;
-  document.getElementById('salesHiddenNote').textContent = hidden>0 ? hidden+' order(s) over '+fmtCompact(LARGE_PO)+' hidden from the charts (still counted in the totals and the table)' : '';
-  Object.values(salesCharts).forEach(c=>c&&c.destroy()); salesCharts = {};
-  const BLUE='#1E88C7', GREEN='#1F9D65';
-  const axisMoney = {ticks:{callback:v=>fmtCompact(v)}, beginAtZero:true};
-  const moneyTip = {callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtMoney(ctx.raw)}`}};
-
-  // ---- by month ----
-  const dated = R.filter(r=>r.date);
-  if(dated.length){
-    const ks = dated.map(r=>r.date.getFullYear()*12+r.date.getMonth());
-    const lo = Math.min(...ks), hi = Math.max(...ks);
-    const labels=[], amt=[], prf=[];
-    for(let k=lo;k<=hi;k++){
-      labels.push(new Date(Math.floor(k/12),k%12,1).toLocaleDateString('en-GB',{month:'short',year:'2-digit'}));
-      const rows = dated.filter(r=>r.date.getFullYear()*12+r.date.getMonth()===k);
-      amt.push(rows.reduce((a,r)=>a+r.amt,0));
-      prf.push(rows.filter(r=>r.cost!==null&&r.profit!==null).reduce((a,r)=>a+r.profit,0));
-    }
-    salesCharts.month = new Chart(document.getElementById('chartSalesMonth'),{type:'bar',
-      data:{labels, datasets:[{label:'PO value',data:amt,backgroundColor:BLUE,borderRadius:4},{label:'Profit',data:prf,backgroundColor:GREEN,borderRadius:4}]},
-      options:{responsive:true,maintainAspectRatio:false,scales:{y:axisMoney},plugins:{legend:{position:'top',align:'end'},tooltip:moneyTip}}});
-  }
-  // ---- by product ----
-  const groupBy = (keyFn)=>{ const m=new Map(); R.forEach(r=>{ const k=keyFn(r)||'—'; const o=m.get(k)||{amt:0,profit:0}; o.amt+=r.amt; if(r.cost!==null&&r.profit!==null) o.profit+=r.profit; m.set(k,o); }); return [...m.entries()].sort((a,b)=>b[1].amt-a[1].amt); };
-  const prod = groupBy(r=>r.name).slice(0,8);
-  const short = t => t.length>34 ? t.slice(0,33)+'…' : t;
-  salesCharts.product = new Chart(document.getElementById('chartSalesProduct'),{type:'bar',
-    data:{labels:prod.map(p=>short(p[0])), datasets:[{label:'PO value',data:prod.map(p=>p[1].amt),backgroundColor:BLUE,borderRadius:4},{label:'Profit',data:prod.map(p=>p[1].profit),backgroundColor:GREEN,borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:axisMoney, y:{ticks:{autoSkip:false}}},plugins:{legend:{display:false},tooltip:{callbacks:{title:items=>prod[items[0].dataIndex][0],label:moneyTip.callbacks.label}}}}});
-  // ---- by client / supplier ----
-  const by = document.getElementById('salesGroupBy').value;
-  const grp = groupBy(r=>r[by]);
-  salesCharts.group = new Chart(document.getElementById('chartSalesGroup'),{type:'bar',
-    data:{labels:grp.map(p=>short(p[0])), datasets:[{label:'PO value',data:grp.map(p=>p[1].amt),backgroundColor:BLUE,borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:axisMoney, y:{ticks:{autoSkip:false}}},plugins:{legend:{display:false},tooltip:moneyTip}}});
-}
-
-function renderSalesTable(){
-  const q = (document.getElementById('salesSearch').value||'').trim().toLowerCase();
-  let rows = DATA_SALES.filter(r=> !q || [r.po,r.client,r.supplier,r.name,r.status,r.partner].join(' ').toLowerCase().includes(q));
-  rows = rows.slice().sort((a,b)=>(b.date||0)-(a.date||0));
-  const pages = Math.max(1, Math.ceil(rows.length/SALES_PAGE_SIZE));
-  if(salesPage>pages) salesPage = pages;
-  const slice = rows.slice((salesPage-1)*SALES_PAGE_SIZE, salesPage*SALES_PAGE_SIZE);
-  const badge = s => { const l=(s||'').toLowerCase(); const cls = l.includes('deliver')?'badge-signed':(l.includes('open')?'badge-negotiation':'badge-notstarted'); return `<span class="badge ${cls}">${esc(s||'—')}</span>`; };
-  const d = x => x ? x.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
-  document.getElementById('bodySales').innerHTML = slice.map(r=>`<tr>
-    <td class="nw">${esc(r.po||'—')}</td><td class="nw">${d(r.date)}</td><td>${esc(r.client||'—')}</td><td>${esc(r.supplier||'—')}</td><td>${esc(r.name)}</td>
-    <td class="num">${r.qty==null?'—':r.qty}</td><td class="num">${fmtMoney(r.amt)}</td><td class="num">${fmtMoney(r.cost)}</td><td class="num">${fmtMoney(r.profit)}</td><td>${badge(r.status)}</td></tr>`).join('')
-    || '<tr><td colspan="10" style="text-align:center; padding:24px; color:var(--text-dim);">No purchase orders match.</td></tr>';
-  document.getElementById('salesPagInfo').textContent = salesPage+' / '+pages;
-  document.getElementById('salesPrev').disabled = salesPage<=1;
-  document.getElementById('salesNext').disabled = salesPage>=pages;
-  document.getElementById('salesTableSub').textContent = rows.length+' PO line'+(rows.length===1?'':'s');
-}
-document.getElementById('salesIncludeLarge').addEventListener('change', renderSalesCharts);
-document.getElementById('salesGroupBy').addEventListener('change', renderSalesCharts);
-document.getElementById('salesSearch').addEventListener('input', ()=>{ salesPage=1; renderSalesTable(); });
-document.getElementById('salesPrev').addEventListener('click', ()=>{ salesPage--; renderSalesTable(); });
-document.getElementById('salesNext').addEventListener('click', ()=>{ salesPage++; renderSalesTable(); });
+// Sales data is not connected (the Sales tab was removed). The sales funnel / pie on the front page read these placeholders.
+const DATA_SALES = [], SALES_ERROR = '', salesUnlocked = false;
 
 function renderTargets(){
   const year = new Date().getFullYear();
@@ -2378,7 +2122,6 @@ async function loadData(){
     computeKpisPq(); renderPqFlow(); renderAlertsPq(); populateFiltersPq(); renderTablePq();
     renderDq('dqListPq','dqCountPq', computeDqPq(), 'pq');
 
-    if(salesUnlocked) showSalesContent(); // sales data is only fetched after the password is accepted
 
     try{
       renderTargets();
@@ -2402,6 +2145,7 @@ async function loadData(){
     document.getElementById('lastUpdated').textContent = 'Not connected';
   }
 }
+document.querySelectorAll('.period-pick input').forEach(i=>{ i.checked = (i.value===MOVE_PERIOD); i.addEventListener('change', ()=>setMovePeriod(i.value)); });
 loadData();
 
 </script>
