@@ -349,7 +349,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v59 · 25 Nov 2026, 01:40</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v60 · 25 Nov 2026, 01:55</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -1563,6 +1563,7 @@ function renderEngineerAgTargets(year){
 
 let chartCoverageInstance = null;
 let CATALOG_NAMES = [];
+let CATALOG_COMPLETE = null;   // normalised names of product-list rows that have all six cells filled
 let CATALOG_CATEGORIZED = null;   // product-list rows with Product, Category, Type, Business line, Suggested partner and Needs PQ? all filled (null = a column was not found)
 let CATALOG_NOPQ = null;   // product-list names whose 'Needs PQ?' = No (null = column not found)   // names from Sheet1 column J
 let PRODUCTS = {list:[], byKey:new Map()};   // unique products built from the PQ rows
@@ -1583,11 +1584,11 @@ async function loadCatalogSize(){
     const hdrIdx = k => (rows[hr]||[]).findIndex(c=>String(c).replace(/[\s?]+/g,' ').trim().toLowerCase()===k);
     const catCols = ['category','type','business line','suggested partner','needs pq'].map(hdrIdx);
     const catOk = catCols.every(j=>j>=0);
-    let n = 0, categorized = 0; const names = []; const noPq = [];
+    let n = 0, categorized = 0; const names = []; const noPq = []; const completeKeys = [];
     for(let i=hr+1;i<rows.length;i++){ const v=String((rows[i]||[])[hc]||'').trim(); if(v){ n++; names.push(v);
-      if(catOk && catCols.every(j=>String((rows[i]||[])[j]||'').trim()!=='')) categorized++;
+      if(catOk && catCols.every(j=>String((rows[i]||[])[j]||'').trim()!=='')){ categorized++; completeKeys.push(v.replace(/\s+/g,' ').trim().toLowerCase()); }
       if(npc>=0 && /^no$/i.test(String((rows[i]||[])[npc]||'').trim())) noPq.push(v); } }
-    if(n>0){ TARGET_CATALOG_SIZE = n; CATALOG_NAMES = names; CATALOG_NOPQ = (npc>=0) ? noPq : null; CATALOG_CATEGORIZED = catOk ? categorized : null; }
+    if(n>0){ TARGET_CATALOG_SIZE = n; CATALOG_NAMES = names; CATALOG_NOPQ = (npc>=0) ? noPq : null; CATALOG_CATEGORIZED = catOk ? categorized : null; CATALOG_COMPLETE = catOk ? completeKeys : null; }
   }catch(e){ console.error('Could not read Sheet1 column J — using fallback count', e); }
 }
 
@@ -1856,9 +1857,18 @@ function renderMiniDash(){
   // ready-to-sell status needs the agreements, so work it out before drawing the pie
   MINI_RTS = computeReadyToSell();
   const bk = productBuckets();
-  const segs = [1,2,3,4].map(n=>({label:PQ_NAMES[n-1], num:bk[n], color:STAGE_COLORS[n]}));
+  // Categorized slice = product-list rows with all six cells filled that are not yet in Study / Matrix / Submitted / Qualified
+  // (a pie slice can hold a product only once). Falls back to the PQ Stage count if the product list can't be read.
+  let catSlice = bk[1], restSlice = remaining, restLabel = 'No vendor yet';
+  if(CATALOG_COMPLETE){
+    const later = new Set(PRODUCTS.list.filter(p=>p.stage>=2).map(p=>p.key));
+    catSlice = [...new Set(CATALOG_COMPLETE)].filter(k=>!later.has(k)).length;
+    restSlice = Math.max(0, total - catSlice - bk[2]-bk[3]-bk[4]-bk.ready);
+    restLabel = 'Not categorized yet';
+  }
+  const segs = [{label:PQ_NAMES[0], num:catSlice, color:STAGE_COLORS[1]}].concat([2,3,4].map(n=>({label:PQ_NAMES[n-1], num:bk[n], color:STAGE_COLORS[n]})));
   segs.push({label:'Qualified', num:bk.ready, color:STAGE_COLORS[5]});
-  segs.push({label:'No vendor yet', num:remaining, color:'#E3ECF4'});
+  segs.push({label:restLabel, num:restSlice, color:'#E3ECF4'});
   document.getElementById('miniPieLeg').innerHTML = segs.map(g=>`<div><span class="sw" style="background:${g.color}"></span><b>${g.num}</b> ${esc(g.label)}</div>`).join('');
   if(chartCoverageInstance) chartCoverageInstance.destroy();
   chartCoverageInstance = new Chart(document.getElementById('chartCoverage'), {
