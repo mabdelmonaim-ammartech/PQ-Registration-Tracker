@@ -349,7 +349,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v58 · 7 Nov 2026, 16:20</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v59 · 25 Nov 2026, 01:40</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -1002,6 +1002,8 @@ function renderAgFlow(){
     {label:'Registered Companies', sub:'work is done', count:exact(5), done:true},
   ]);
 }
+// Categorized = product-list rows with all six cells filled (falls back to the PQ Stage count if the product list can't be read)
+const categorizedCount = fallback => (CATALOG_CATEGORIZED!=null ? CATALOG_CATEGORIZED : fallback);
 function renderPqFlow(){
   const exact = n => DATA_PQ.filter(r=>r.stage===n).length;
   renderFunnelSVG('flowSvgWrapPq', [
@@ -1561,6 +1563,7 @@ function renderEngineerAgTargets(year){
 
 let chartCoverageInstance = null;
 let CATALOG_NAMES = [];
+let CATALOG_CATEGORIZED = null;   // product-list rows with Product, Category, Type, Business line, Suggested partner and Needs PQ? all filled (null = a column was not found)
 let CATALOG_NOPQ = null;   // product-list names whose 'Needs PQ?' = No (null = column not found)   // names from Sheet1 column J
 let PRODUCTS = {list:[], byKey:new Map()};   // unique products built from the PQ rows
 
@@ -1577,10 +1580,14 @@ async function loadCatalogSize(){
     }
     if(hr<0){ hr=0; hc=9; }
     const npc = (rows[hr]||[]).findIndex(c=>String(c).replace(/[\s?]+/g,' ').trim().toLowerCase()==='needs pq');
-    let n = 0; const names = []; const noPq = [];
+    const hdrIdx = k => (rows[hr]||[]).findIndex(c=>String(c).replace(/[\s?]+/g,' ').trim().toLowerCase()===k);
+    const catCols = ['category','type','business line','suggested partner','needs pq'].map(hdrIdx);
+    const catOk = catCols.every(j=>j>=0);
+    let n = 0, categorized = 0; const names = []; const noPq = [];
     for(let i=hr+1;i<rows.length;i++){ const v=String((rows[i]||[])[hc]||'').trim(); if(v){ n++; names.push(v);
+      if(catOk && catCols.every(j=>String((rows[i]||[])[j]||'').trim()!=='')) categorized++;
       if(npc>=0 && /^no$/i.test(String((rows[i]||[])[npc]||'').trim())) noPq.push(v); } }
-    if(n>0){ TARGET_CATALOG_SIZE = n; CATALOG_NAMES = names; CATALOG_NOPQ = (npc>=0) ? noPq : null; }
+    if(n>0){ TARGET_CATALOG_SIZE = n; CATALOG_NAMES = names; CATALOG_NOPQ = (npc>=0) ? noPq : null; CATALOG_CATEGORIZED = catOk ? categorized : null; }
   }catch(e){ console.error('Could not read Sheet1 column J — using fallback count', e); }
 }
 
@@ -1880,7 +1887,7 @@ function renderMiniDash(){
   const M = computeStageMovement();
   const mvTip = (n,label) => label+' — in progress. Last '+MOVE_DAYS+' days: +'+M.mv[n].in+' entered, −'+M.mv[n].out+' left (+n entered, −n left the stage)'+(M.missing>0 && n===1 ? '. Note: '+M.missing+' product(s) have no entry date for their current stage, so their movement is not counted.' : '')+(M.source==='log' ? ' (source: Stage Log, one count per product)' : '');
   renderFunnelSVG('miniFunnelSvg', [
-    {label:'Categorized', count:exact(1), done:false, moveIn:M.mv[1].in, moveOut:M.mv[1].out, tip:mvTip(1,'Categorized')},
+    {label:'Categorized', count:categorizedCount(exact(1)), done:false, moveIn:M.mv[1].in, moveOut:M.mv[1].out, tip:mvTip(1,'Categorized')+(CATALOG_CATEGORIZED!=null ? '. Count = products in the product list with Product, Category, Type, Business line, Suggested partner and Needs PQ? all filled' : '')},
     {label:'Study In Progress', count:exact(2), done:false, moveIn:M.mv[2].in, moveOut:M.mv[2].out, tip:mvTip(2,'Study In Progress')},
     {label:'Matrix Done', count:exact(3), done:false, moveIn:M.mv[3].in, moveOut:M.mv[3].out, tip:mvTip(3,'Matrix Done')},
     {label:'PQ Submitted', count:exact(4), done:false, moveIn:M.mv[4].in, moveOut:M.mv[4].out, tip:mvTip(4,'PQ Submitted')},
