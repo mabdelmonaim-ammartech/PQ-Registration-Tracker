@@ -349,7 +349,7 @@ tbody.pg-anim-prev{ animation: pgSlidePrev .28s ease; }
     </div>
   </div>
   <div class="topbar-meta">
-    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v60 · 25 Nov 2026, 01:55</span></div>
+    <div class="meta-item"><span class="meta-label">Version</span><span class="meta-val">v61 · 25 Nov 2026, 02:10</span></div>
     <div class="meta-item"><span class="meta-label">Data</span><span class="meta-val" id="lastUpdated">Loading…</span></div>
     <button class="btn-ghost small" id="refreshBtn">Refresh</button>
     <button class="btn-ghost" id="printBtn">Export / Print</button>
@@ -1897,7 +1897,7 @@ function renderMiniDash(){
   const M = computeStageMovement();
   const mvTip = (n,label) => label+' — in progress. Last '+MOVE_DAYS+' days: +'+M.mv[n].in+' entered, −'+M.mv[n].out+' left (+n entered, −n left the stage)'+(M.missing>0 && n===1 ? '. Note: '+M.missing+' product(s) have no entry date for their current stage, so their movement is not counted.' : '')+(M.source==='log' ? ' (source: Stage Log, one count per product)' : '');
   renderFunnelSVG('miniFunnelSvg', [
-    {label:'Categorized', count:categorizedCount(exact(1)), done:false, moveIn:M.mv[1].in, moveOut:M.mv[1].out, tip:mvTip(1,'Categorized')+(CATALOG_CATEGORIZED!=null ? '. Count = products in the product list with Product, Category, Type, Business line, Suggested partner and Needs PQ? all filled' : '')},
+    {label:'Categorized', count:catSlice, done:false, moveIn:M.mv[1].in, moveOut:M.mv[1].out, tip:mvTip(1,'Categorized')+(CATALOG_CATEGORIZED!=null ? '. Count = products in the product list with Product, Category, Type, Business line, Suggested partner and Needs PQ? all filled that have not yet moved to a later PQ stage (same number as the pie)' : '')},
     {label:'Study In Progress', count:exact(2), done:false, moveIn:M.mv[2].in, moveOut:M.mv[2].out, tip:mvTip(2,'Study In Progress')},
     {label:'Matrix Done', count:exact(3), done:false, moveIn:M.mv[3].in, moveOut:M.mv[3].out, tip:mvTip(3,'Matrix Done')},
     {label:'PQ Submitted', count:exact(4), done:false, moveIn:M.mv[4].in, moveOut:M.mv[4].out, tip:mvTip(4,'PQ Submitted')},
